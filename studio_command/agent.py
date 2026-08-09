@@ -4,6 +4,7 @@ from .models import (
     ProductionBrief,
     ResearchPacket,
     CreativeTreatment,
+    ProductionPlan,
 )
 from .prompts import EXECUTIVE_PRODUCER_INSTRUCTION
 from .tools import search_web
@@ -92,6 +93,47 @@ Return a structured CreativeTreatment.
 """
 
 
+PRODUCTION_MANAGER_INSTRUCTION = """
+You are the Production Manager Agent for Kevaro Studio Command.
+
+You receive these completed upstream artifacts:
+
+PRODUCTION BRIEF:
+{production_brief}
+
+RESEARCH PACKET:
+{research_packet}
+
+CREATIVE TREATMENT:
+{creative_treatment}
+
+Convert them into an executable, dependency-aware production plan.
+
+OPERATING RULES
+
+1. Every task must produce a concrete deliverable or unblock downstream work.
+
+2. Identify true dependencies accurately.
+
+3. GRAPH, NOT CHAIN
+Group work that can safely happen at the same time into parallel workstreams.
+
+4. Identify the critical path controlling the delivery date.
+
+5. Preserve all Studio Head approval gates.
+
+6. Assign each task to the appropriate specialist role or agent.
+
+7. Every task must have objective completion criteria.
+
+8. Separate current blockers from possible schedule risks.
+
+9. next_actions must contain work the autonomous production crew can begin immediately.
+
+Return a structured ProductionPlan.
+"""
+
+
 executive_producer_agent = Agent(
     name="executive_producer",
     model="gemini-3.5-flash",
@@ -132,6 +174,19 @@ creative_development_agent = Agent(
 )
 
 
+production_manager_agent = Agent(
+    name="production_manager_agent",
+    model="gemini-3.5-flash",
+    description=(
+        "Converts the production brief, research, and creative treatment "
+        "into an executable production plan."
+    ),
+    instruction=PRODUCTION_MANAGER_INSTRUCTION,
+    output_schema=ProductionPlan,
+    output_key="production_plan",
+)
+
+
 root_agent = SequentialAgent(
     name="studio_orchestrator",
     description=(
@@ -142,5 +197,6 @@ root_agent = SequentialAgent(
         executive_producer_agent,
         research_agent,
         creative_development_agent,
+        production_manager_agent,
     ],
 )

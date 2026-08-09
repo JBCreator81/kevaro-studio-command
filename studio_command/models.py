@@ -196,3 +196,75 @@ class CreativeTreatment(BaseModel):
     unresolved_creative_questions: List[str] = Field(
         description="Creative uncertainties that still need resolution."
     )
+
+
+class ProductionTask(BaseModel):
+    task_name: str = Field(
+        description="Clear executable production task."
+    )
+
+    responsible_role: str = Field(
+        description="Agent or production role responsible for completing the task."
+    )
+
+    deliverable: str = Field(
+        description="Concrete output expected from this task."
+    )
+
+    dependencies: List[str] = Field(
+        description="Tasks, approvals, assets, evidence, or decisions required before this task can proceed."
+    )
+
+    completion_criteria: List[str] = Field(
+        description="Objective conditions that define successful completion."
+    )
+
+    approval_required: bool = Field(
+        description="Whether this task requires Studio Head approval before downstream work proceeds."
+    )
+
+    risk_notes: List[str] = Field(
+        description="Known execution risks or scheduling concerns for this task."
+    )
+
+
+class ProductionPlan(BaseModel):
+    production_name: str = Field(
+        description="Production being planned."
+    )
+
+    execution_summary: str = Field(
+        description="Concise explanation of how the production will be executed."
+    )
+
+    tasks: List[ProductionTask] = Field(
+        description="Ordered production tasks required to complete the project."
+    )
+
+    critical_path: List[str] = Field(
+        description="Tasks and dependencies that directly control the delivery date."
+    )
+
+    parallel_workstreams: List[List[str]] = Field(
+        description="Groups of tasks that may safely proceed in parallel."
+    )
+
+    milestones: List[str] = Field(
+        description="Major production checkpoints from creative approval through final delivery."
+    )
+
+    approval_gates: List[str] = Field(
+        description="Material decisions that require Studio Head approval."
+    )
+
+    blockers: List[str] = Field(
+        description="Known blockers preventing or threatening execution."
+    )
+
+    schedule_risks: List[str] = Field(
+        description="Timing risks that could affect the promised delivery date."
+    )
+
+    next_actions: List[str] = Field(
+        description="Immediate executable actions the autonomous production crew should take next."
+    )
