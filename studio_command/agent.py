@@ -5,6 +5,7 @@ from .models import (
     ResearchPacket,
     CreativeTreatment,
     ProductionPlan,
+    ProductionSchedule,
 )
 from .prompts import EXECUTIVE_PRODUCER_INSTRUCTION
 from .tools import search_web
@@ -134,6 +135,47 @@ Return a structured ProductionPlan.
 """
 
 
+SCHEDULING_AGENT_INSTRUCTION = """
+You are the Scheduling Agent for Kevaro Studio Command.
+
+You receive the completed ProductionPlan:
+
+{production_plan}
+
+Your job is to convert that plan into a dependency-aware execution schedule.
+
+CORE OPERATING RULES
+
+1. DEPENDENCIES FIRST
+Never schedule a task before its true dependencies or approval gates are satisfied.
+
+2. GRAPH, NOT CHAIN
+Preserve legitimate parallel workstreams.
+Do not force everything into a single sequence.
+
+3. DEADLINE PROTECTION
+Identify the critical path and anything threatening the requested delivery date.
+
+4. APPROVAL WINDOWS
+Studio Head approval gates must appear at the correct point in the schedule.
+
+5. NO INVENTED DATES
+If an exact date or duration is not known, use a clear relative execution window
+instead of fabricating calendar precision.
+
+6. BUFFER VISIBILITY
+Show where schedule buffer exists and where there is none.
+
+7. COMPLETION GATES
+Each scheduled task must have a clear condition that allows downstream work to begin.
+
+8. IMMEDIATE ACTIONABILITY
+Identify scheduling actions that can begin now.
+
+Return a structured ProductionSchedule.
+"""
+
+
 executive_producer_agent = Agent(
     name="executive_producer",
     model="gemini-3.5-flash",
@@ -187,6 +229,19 @@ production_manager_agent = Agent(
 )
 
 
+scheduling_agent = Agent(
+    name="scheduling_agent",
+    model="gemini-3.5-flash",
+    description=(
+        "Transforms the ProductionPlan into a dependency-aware schedule "
+        "with parallel workstreams, approval windows, critical path, and deadline risks."
+    ),
+    instruction=SCHEDULING_AGENT_INSTRUCTION,
+    output_schema=ProductionSchedule,
+    output_key="production_schedule",
+)
+
+
 root_agent = SequentialAgent(
     name="studio_orchestrator",
     description=(
@@ -198,5 +253,6 @@ root_agent = SequentialAgent(
         research_agent,
         creative_development_agent,
         production_manager_agent,
+        scheduling_agent,
     ],
 )

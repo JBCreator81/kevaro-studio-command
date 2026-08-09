@@ -21,6 +21,7 @@ async def main():
     research_packet = None
     creative_treatment = None
     production_plan = None
+    production_schedule = None
 
     async for event in app.async_stream_query(
         user_id="studio-head-demo",
@@ -56,29 +57,28 @@ async def main():
                 if isinstance(parsed, dict) and "tasks" in parsed:
                     production_plan = parsed
 
+            elif author == "scheduling_agent":
+                if isinstance(parsed, dict) and "scheduled_tasks" in parsed:
+                    production_schedule = parsed
+
     print("\n=== PRODUCTION BRIEF ===\n")
-    if final_brief:
-        print(json.dumps(final_brief, indent=2))
-    else:
-        print("No structured ProductionBrief was found.")
+    print(json.dumps(final_brief, indent=2) if final_brief else "No structured ProductionBrief was found.")
 
     print("\n=== RESEARCH PACKET ===\n")
-    if research_packet:
-        print(json.dumps(research_packet, indent=2))
-    else:
-        print("No structured ResearchPacket was found.")
+    print(json.dumps(research_packet, indent=2) if research_packet else "No structured ResearchPacket was found.")
 
     print("\n=== CREATIVE TREATMENT ===\n")
-    if creative_treatment:
-        print(json.dumps(creative_treatment, indent=2))
-    else:
-        print("No structured CreativeTreatment was found.")
+    print(json.dumps(creative_treatment, indent=2) if creative_treatment else "No structured CreativeTreatment was found.")
 
     print("\n=== PRODUCTION PLAN ===\n")
-    if production_plan:
-        print(json.dumps(production_plan, indent=2))
-    else:
-        print("No structured ProductionPlan was found.")
+    print(json.dumps(production_plan, indent=2) if production_plan else "No structured ProductionPlan was found.")
+
+    print("\n=== PRODUCTION SCHEDULE ===\n")
+    print(
+        json.dumps(production_schedule, indent=2)
+        if production_schedule
+        else "No structured ProductionSchedule was found."
+    )
 
 
 if __name__ == "__main__":

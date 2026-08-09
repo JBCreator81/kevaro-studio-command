@@ -268,3 +268,71 @@ class ProductionPlan(BaseModel):
     next_actions: List[str] = Field(
         description="Immediate executable actions the autonomous production crew should take next."
     )
+
+
+class ScheduledTask(BaseModel):
+    task_name: str = Field(
+        description="Production task being scheduled."
+    )
+
+    responsible_role: str = Field(
+        description="Agent or production role responsible for the task."
+    )
+
+    sequence_position: int = Field(
+        description="Relative execution position within the production schedule."
+    )
+
+    depends_on: List[str] = Field(
+        description="Tasks or approval gates that must be completed first."
+    )
+
+    can_run_in_parallel_with: List[str] = Field(
+        description="Other tasks that may safely execute at the same time."
+    )
+
+    target_window: str = Field(
+        description="Planned execution window relative to the production deadline."
+    )
+
+    completion_gate: str = Field(
+        description="Evidence or condition required before this task is considered complete."
+    )
+
+
+class ProductionSchedule(BaseModel):
+    production_name: str = Field(
+        description="Production associated with this schedule."
+    )
+
+    delivery_target: str = Field(
+        description="Requested or inferred final delivery target."
+    )
+
+    scheduled_tasks: List[ScheduledTask] = Field(
+        description="Dependency-aware execution schedule."
+    )
+
+    critical_path: List[str] = Field(
+        description="Ordered tasks controlling the final delivery date."
+    )
+
+    parallel_execution_groups: List[List[str]] = Field(
+        description="Tasks grouped for safe parallel execution."
+    )
+
+    approval_windows: List[str] = Field(
+        description="Studio Head approval points and when they must occur."
+    )
+
+    schedule_buffer: List[str] = Field(
+        description="Available timing buffers or explicitly identified lack of buffer."
+    )
+
+    deadline_threats: List[str] = Field(
+        description="Conditions that could cause the delivery deadline to slip."
+    )
+
+    immediate_schedule_actions: List[str] = Field(
+        description="Scheduling actions that can begin immediately."
+    )
