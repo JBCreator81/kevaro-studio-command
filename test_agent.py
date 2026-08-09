@@ -25,6 +25,7 @@ async def main():
     asset_media_plan = None
     clearance_report = None
     verification_qa_report = None
+    studio_head_decision_package = None
 
     async for event in app.async_stream_query(
         user_id="studio-head-demo",
@@ -75,6 +76,10 @@ async def main():
                 if isinstance(parsed, dict) and "qa_decision" in parsed:
                     verification_qa_report = parsed
 
+            elif author == "studio_head_decision_gate":
+                if isinstance(parsed, dict) and "recommended_decision" in parsed:
+                    studio_head_decision_package = parsed
+
     print("\n=== PRODUCTION BRIEF ===\n")
     print(json.dumps(final_brief, indent=2) if final_brief else "No structured ProductionBrief was found.")
 
@@ -101,6 +106,14 @@ async def main():
         json.dumps(verification_qa_report, indent=2)
         if verification_qa_report
         else "No structured VerificationQAReport was found."
+    )
+
+
+    print("\n=== STUDIO HEAD DECISION PACKAGE ===\n")
+    print(
+        json.dumps(studio_head_decision_package, indent=2)
+        if studio_head_decision_package
+        else "No structured StudioHeadDecisionPackage was found."
     )
 
 

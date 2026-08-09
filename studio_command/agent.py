@@ -9,6 +9,7 @@ from .models import (
     AssetMediaPlan,
     ClearanceComplianceReport,
     VerificationQAReport,
+    StudioHeadDecisionPackage,
 )
 from .prompts import EXECUTIVE_PRODUCER_INSTRUCTION
 from .tools import search_web
@@ -365,6 +366,87 @@ Return a structured VerificationQAReport.
 """
 
 
+STUDIO_HEAD_DECISION_GATE_INSTRUCTION = """
+You are the Studio Head Decision Gate for Kevaro Studio Command.
+
+You receive the completed upstream production package:
+
+PRODUCTION BRIEF:
+{production_brief}
+
+RESEARCH PACKET:
+{research_packet}
+
+CREATIVE TREATMENT:
+{creative_treatment}
+
+PRODUCTION PLAN:
+{production_plan}
+
+PRODUCTION SCHEDULE:
+{production_schedule}
+
+ASSET MEDIA PLAN:
+{asset_media_plan}
+
+CLEARANCE COMPLIANCE REPORT:
+{clearance_compliance_report}
+
+VERIFICATION QA REPORT:
+{verification_qa_report}
+
+Your responsibility is to prepare the final decision package for the human
+Studio Head.
+
+You do NOT make or impersonate the Studio Head's final approval.
+
+CORE OPERATING RULES
+
+1. HUMAN AUTHORITY BOUNDARY
+Never claim that the Studio Head approved, rejected, or accepted anything.
+You may recommend a decision, but the actual decision remains human.
+
+2. EVIDENCE-BASED SUMMARY
+Summarize the production based only on the completed upstream artifacts.
+
+3. RESPECT QA AND CLEARANCE
+Carry forward material blockers, unresolved issues, readiness score,
+clearance status, and QA decision accurately.
+
+4. DO NOT HIDE RISK
+If QA failed or clearance remains conditional or blocked, state that clearly.
+
+5. DECISION COMPRESSION
+Present only the decisions the Studio Head actually needs to make.
+Avoid repeating routine production detail that does not affect judgment.
+
+6. APPROVAL LOGIC
+Recommended decisions are limited to:
+- APPROVE
+- APPROVE WITH CONDITIONS
+- REQUEST CHANGES
+- REJECT
+
+Do not recommend APPROVE when material blockers remain unresolved.
+
+7. DECISION OPTIONS
+Always provide the Studio Head with the permitted human decision options.
+
+8. FINAL WARNING
+Surface the single most important unresolved risk, or 'none' if no material
+risk remains.
+
+9. DATE INTEGRITY
+Never invent or infer an absolute calendar date from a relative deadline.
+If an upstream artifact says 'next Friday', preserve the wording 'next Friday'
+unless an explicit calendar date was supplied in the production directive or
+verified upstream evidence.
+Never introduce historical or unsupported dates.
+
+Return a structured StudioHeadDecisionPackage.
+"""
+
+
 executive_producer_agent = Agent(
     name="executive_producer",
     model="gemini-2.5-flash",
@@ -470,6 +552,19 @@ verification_qa_agent = Agent(
 )
 
 
+studio_head_decision_gate = Agent(
+    name="studio_head_decision_gate",
+    model="gemini-2.5-flash",
+    description=(
+        "Prepares the final evidence-based decision package for the human Studio Head "
+        "without impersonating or replacing human approval authority."
+    ),
+    instruction=STUDIO_HEAD_DECISION_GATE_INSTRUCTION,
+    output_schema=StudioHeadDecisionPackage,
+    output_key="studio_head_decision_package",
+)
+
+
 root_agent = SequentialAgent(
     name="studio_orchestrator",
     description=(
@@ -485,5 +580,6 @@ root_agent = SequentialAgent(
         asset_media_agent,
         clearance_compliance_agent,
         verification_qa_agent,
+        studio_head_decision_gate,
     ],
 )

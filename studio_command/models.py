@@ -570,3 +570,81 @@ class VerificationQAReport(BaseModel):
     next_qa_actions: List[str] = Field(
         description="Immediate corrective or verification actions required next."
     )
+
+
+class StudioHeadDecisionItem(BaseModel):
+    item_name: str = Field(
+        description="Specific decision item requiring Studio Head attention."
+    )
+
+    category: str = Field(
+        description="Decision category such as creative, budget, schedule, compliance, asset, technical, risk, or delivery."
+    )
+
+    recommendation: str = Field(
+        description="System recommendation based on the completed production evidence."
+    )
+
+    rationale: str = Field(
+        description="Concise evidence-based rationale supporting the recommendation."
+    )
+
+    risk_if_approved: str = Field(
+        description="Material risk if this item is approved in its current state."
+    )
+
+    risk_if_delayed: str = Field(
+        description="Material consequence of delaying the decision."
+    )
+
+    requires_human_decision: bool = Field(
+        description="Whether this item must be explicitly decided by the Studio Head."
+    )
+
+
+class StudioHeadDecisionPackage(BaseModel):
+    production_name: str = Field(
+        description="Production presented to the Studio Head."
+    )
+
+    executive_summary: str = Field(
+        description="Concise final summary of the production package and current state."
+    )
+
+    qa_decision: str = Field(
+        description="Final QA decision inherited from the Verification & QA stage."
+    )
+
+    readiness_score: int = Field(
+        ge=0,
+        le=100,
+        description="Verified production readiness score."
+    )
+
+    clearance_status: str = Field(
+        description="Current clearance and compliance status."
+    )
+
+    decision_items: List[StudioHeadDecisionItem] = Field(
+        description="Items that require Studio Head judgment or acknowledgement."
+    )
+
+    material_blockers: List[str] = Field(
+        description="Issues that prevent unconditional approval."
+    )
+
+    conditions_for_approval: List[str] = Field(
+        description="Conditions that must be satisfied for approval or conditional approval."
+    )
+
+    recommended_decision: str = Field(
+        description="System recommendation such as APPROVE, APPROVE WITH CONDITIONS, REQUEST CHANGES, or REJECT."
+    )
+
+    decision_options: List[str] = Field(
+        description="Permitted Studio Head decisions."
+    )
+
+    final_warning: str = Field(
+        description="Most important unresolved risk or 'none' if no material warning remains."
+    )
