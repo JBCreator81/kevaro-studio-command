@@ -31,3 +31,11 @@ __all__ += [
     "build_corrective_work_record",
     "CorrectiveWorkRecord",
 ]
+
+from .decisions import build_production_re_review_record
+from .models import ProductionReReviewRecord
+
+__all__ += [
+    "build_production_re_review_record",
+    "ProductionReReviewRecord",
+]

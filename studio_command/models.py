@@ -808,3 +808,45 @@ class CorrectiveWorkRecord(BaseModel):
     studio_head_reapproval_required: bool = Field(
         description="Whether a new Studio Head decision is mandatory before production may advance."
     )
+
+
+class ProductionReReviewRecord(BaseModel):
+    production_name: str = Field(
+        description="Production returning from corrective work for formal re-review."
+    )
+
+    source_decision_sequence: int = Field(
+        description="Original decision-history sequence that triggered corrective work."
+    )
+
+    corrective_work_ready: bool = Field(
+        description="Whether the corrective work package was completed and submitted for re-review."
+    )
+
+    verification_required: bool = Field(
+        description="Whether independent verification must occur before a new Studio Head decision."
+    )
+
+    verification_completed: bool = Field(
+        description="Whether the required independent verification has been completed."
+    )
+
+    verification_passed: bool = Field(
+        description="Whether the re-reviewed corrective work passed independent verification."
+    )
+
+    studio_head_reapproval_required: bool = Field(
+        description="Whether a fresh Studio Head decision is required before production may advance."
+    )
+
+    may_return_to_studio_head: bool = Field(
+        description="Whether the production is permitted to return to the Studio Head decision gate."
+    )
+
+    may_advance_to_production: bool = Field(
+        description="Whether production may advance without another Studio Head decision. This must remain false during re-review."
+    )
+
+    next_stage: str = Field(
+        description="Deterministic next workflow stage for the re-review cycle."
+    )

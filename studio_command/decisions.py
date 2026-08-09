@@ -209,3 +209,56 @@ def build_corrective_work_record(
         re_review_required=True,
         studio_head_reapproval_required=True,
     )
+
+
+from .models import ProductionReReviewRecord
+
+
+def build_production_re_review_record(
+    *,
+    corrective_record: CorrectiveWorkRecord,
+    verification_completed: bool,
+    verification_passed: bool,
+) -> ProductionReReviewRecord:
+    if not corrective_record.ready_for_re_review:
+        raise ValueError(
+            "Corrective work must be complete before formal re-review can begin."
+        )
+
+    if not corrective_record.re_review_required:
+        raise ValueError(
+            "Corrective work record does not require formal re-review."
+        )
+
+    if not corrective_record.studio_head_reapproval_required:
+        raise ValueError(
+            "Corrective work must require a fresh Studio Head decision."
+        )
+
+    if verification_passed and not verification_completed:
+        raise ValueError(
+            "Verification cannot pass before verification is completed."
+        )
+
+    if not verification_completed:
+        next_stage = "INDEPENDENT_RE_VERIFICATION"
+        may_return_to_studio_head = False
+    elif not verification_passed:
+        next_stage = "CORRECTIVE_WORK"
+        may_return_to_studio_head = False
+    else:
+        next_stage = "STUDIO_HEAD_REAPPROVAL"
+        may_return_to_studio_head = True
+
+    return ProductionReReviewRecord(
+        production_name=corrective_record.production_name,
+        source_decision_sequence=corrective_record.source_decision_sequence,
+        corrective_work_ready=corrective_record.ready_for_re_review,
+        verification_required=True,
+        verification_completed=verification_completed,
+        verification_passed=verification_passed,
+        studio_head_reapproval_required=True,
+        may_return_to_studio_head=may_return_to_studio_head,
+        may_advance_to_production=False,
+        next_stage=next_stage,
+    )
