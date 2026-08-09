@@ -336,3 +336,83 @@ class ProductionSchedule(BaseModel):
     immediate_schedule_actions: List[str] = Field(
         description="Scheduling actions that can begin immediately."
     )
+
+
+class MediaAssetRequirement(BaseModel):
+    asset_name: str = Field(
+        description="Clear name for the required production asset."
+    )
+
+    asset_type: str = Field(
+        description="Type of asset such as video, image, audio, voiceover, graphic, logo, animation, or document."
+    )
+
+    purpose: str = Field(
+        description="Why this asset is required and where it supports the production."
+    )
+
+    source_strategy: str = Field(
+        description="Whether the asset should be generated, sourced, supplied by the client, licensed, or created internally."
+    )
+
+    required_specifications: List[str] = Field(
+        description="Technical, creative, format, resolution, duration, aspect ratio, or quality requirements."
+    )
+
+    dependencies: List[str] = Field(
+        description="Approvals, creative decisions, brand materials, research, or other assets required first."
+    )
+
+    licensing_or_rights: List[str] = Field(
+        description="Usage rights, attribution, licensing, release, or ownership requirements."
+    )
+
+    approval_required: bool = Field(
+        description="Whether Studio Head approval is required before the asset may be used downstream."
+    )
+
+    readiness_status: str = Field(
+        description="Current readiness classification such as ready, blocked, awaiting approval, awaiting source, or requires generation."
+    )
+
+
+class AssetMediaPlan(BaseModel):
+    production_name: str = Field(
+        description="Production associated with this asset plan."
+    )
+
+    asset_requirements: List[MediaAssetRequirement] = Field(
+        description="All material media and production assets required for execution."
+    )
+
+    immediately_actionable_assets: List[str] = Field(
+        description="Assets that can be sourced, prepared, generated, or requested immediately."
+    )
+
+    blocked_assets: List[str] = Field(
+        description="Assets currently prevented from progressing and why."
+    )
+
+    client_supplied_assets: List[str] = Field(
+        description="Assets that must be supplied by the client or Studio Head."
+    )
+
+    generation_candidates: List[str] = Field(
+        description="Assets suitable for automated or AI-assisted generation."
+    )
+
+    licensed_asset_needs: List[str] = Field(
+        description="Assets that require commercial licensing, releases, or rights clearance."
+    )
+
+    format_matrix: List[str] = Field(
+        description="Required output formats, aspect ratios, resolutions, durations, or delivery variants."
+    )
+
+    asset_risks: List[str] = Field(
+        description="Asset-related risks that may affect quality, legality, schedule, or delivery."
+    )
+
+    next_asset_actions: List[str] = Field(
+        description="Immediate asset and media actions the production crew should execute next."
+    )

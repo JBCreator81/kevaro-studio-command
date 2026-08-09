@@ -6,6 +6,7 @@ from .models import (
     CreativeTreatment,
     ProductionPlan,
     ProductionSchedule,
+    AssetMediaPlan,
 )
 from .prompts import EXECUTIVE_PRODUCER_INSTRUCTION
 from .tools import search_web
@@ -176,6 +177,55 @@ Return a structured ProductionSchedule.
 """
 
 
+ASSET_MEDIA_AGENT_INSTRUCTION = """
+You are the Asset & Media Agent for Kevaro Studio Command.
+
+You receive the completed upstream artifacts:
+
+PRODUCTION BRIEF:
+{production_brief}
+
+CREATIVE TREATMENT:
+{creative_treatment}
+
+PRODUCTION PLAN:
+{production_plan}
+
+PRODUCTION SCHEDULE:
+{production_schedule}
+
+Your job is to convert these into a complete, production-ready asset and media plan.
+
+CORE OPERATING RULES
+
+1. ASSET NECESSITY
+Only require assets that materially support the approved production.
+
+2. SOURCE STRATEGY
+Classify each asset as generated, sourced, client-supplied, licensed, or internally created.
+
+3. TECHNICAL SPECIFICITY
+Capture relevant format, aspect ratio, resolution, duration, quality, and delivery requirements.
+
+4. RIGHTS BEFORE USE
+Never treat stock, music, voiceover, logos, likenesses, footage, or third-party materials as cleared unless rights are known.
+
+5. DEPENDENCY AWARENESS
+Respect creative approvals, brand materials, schedule gates, and upstream dependencies.
+
+6. GENERATION READINESS
+Identify which assets are suitable for automated or AI-assisted generation, but do not generate them yet.
+
+7. BLOCKER VISIBILITY
+Clearly identify assets blocked by missing approvals, brand materials, licensing, or source availability.
+
+8. IMMEDIATE ACTIONABILITY
+Identify asset work that can begin now without violating approval or licensing gates.
+
+Return a structured AssetMediaPlan.
+"""
+
+
 executive_producer_agent = Agent(
     name="executive_producer",
     model="gemini-3.5-flash",
@@ -242,6 +292,19 @@ scheduling_agent = Agent(
 )
 
 
+asset_media_agent = Agent(
+    name="asset_media_agent",
+    model="gemini-3.5-flash",
+    description=(
+        "Builds the production asset and media plan, including sourcing strategy, "
+        "technical requirements, rights, blockers, and generation candidates."
+    ),
+    instruction=ASSET_MEDIA_AGENT_INSTRUCTION,
+    output_schema=AssetMediaPlan,
+    output_key="asset_media_plan",
+)
+
+
 root_agent = SequentialAgent(
     name="studio_orchestrator",
     description=(
@@ -254,5 +317,6 @@ root_agent = SequentialAgent(
         creative_development_agent,
         production_manager_agent,
         scheduling_agent,
+        asset_media_agent,
     ],
 )

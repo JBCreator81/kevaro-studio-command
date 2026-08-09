@@ -22,6 +22,7 @@ async def main():
     creative_treatment = None
     production_plan = None
     production_schedule = None
+    asset_media_plan = None
 
     async for event in app.async_stream_query(
         user_id="studio-head-demo",
@@ -32,7 +33,6 @@ async def main():
 
         for part in content.get("parts", []):
             text = part.get("text")
-
             if not text:
                 continue
 
@@ -61,6 +61,10 @@ async def main():
                 if isinstance(parsed, dict) and "scheduled_tasks" in parsed:
                     production_schedule = parsed
 
+            elif author == "asset_media_agent":
+                if isinstance(parsed, dict) and "asset_requirements" in parsed:
+                    asset_media_plan = parsed
+
     print("\n=== PRODUCTION BRIEF ===\n")
     print(json.dumps(final_brief, indent=2) if final_brief else "No structured ProductionBrief was found.")
 
@@ -74,11 +78,10 @@ async def main():
     print(json.dumps(production_plan, indent=2) if production_plan else "No structured ProductionPlan was found.")
 
     print("\n=== PRODUCTION SCHEDULE ===\n")
-    print(
-        json.dumps(production_schedule, indent=2)
-        if production_schedule
-        else "No structured ProductionSchedule was found."
-    )
+    print(json.dumps(production_schedule, indent=2) if production_schedule else "No structured ProductionSchedule was found.")
+
+    print("\n=== ASSET MEDIA PLAN ===\n")
+    print(json.dumps(asset_media_plan, indent=2) if asset_media_plan else "No structured AssetMediaPlan was found.")
 
 
 if __name__ == "__main__":
