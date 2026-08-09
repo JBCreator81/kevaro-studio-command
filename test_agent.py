@@ -19,6 +19,7 @@ async def main():
 
     final_brief = None
     research_packet = None
+    creative_treatment = None
 
     async for event in app.async_stream_query(
         user_id="studio-head-demo",
@@ -42,23 +43,31 @@ async def main():
                 if isinstance(parsed, dict) and "production_title" in parsed:
                     final_brief = parsed
 
-            if author == "research_agent":
+            elif author == "research_agent":
                 if isinstance(parsed, dict) and "evidence" in parsed:
                     research_packet = parsed
 
-    print("\n=== PRODUCTION BRIEF ===\n")
+            elif author == "creative_development_agent":
+                if isinstance(parsed, dict) and "recommended_concept" in parsed:
+                    creative_treatment = parsed
 
+    print("\n=== PRODUCTION BRIEF ===\n")
     if final_brief:
         print(json.dumps(final_brief, indent=2))
     else:
         print("No structured ProductionBrief was found.")
 
     print("\n=== RESEARCH PACKET ===\n")
-
     if research_packet:
         print(json.dumps(research_packet, indent=2))
     else:
         print("No structured ResearchPacket was found.")
+
+    print("\n=== CREATIVE TREATMENT ===\n")
+    if creative_treatment:
+        print(json.dumps(creative_treatment, indent=2))
+    else:
+        print("No structured CreativeTreatment was found.")
 
 
 if __name__ == "__main__":

@@ -124,3 +124,75 @@ class ResearchPacket(BaseModel):
     blockers: List[str] = Field(
         description="Evidence-related blockers that could prevent production work from proceeding safely."
     )
+
+
+class CreativeConcept(BaseModel):
+    concept_name: str = Field(
+        description="Short working name for the creative concept."
+    )
+
+    core_idea: str = Field(
+        description="The central creative idea and audience-facing proposition."
+    )
+
+    emotional_target: str = Field(
+        description="The primary emotional response the concept is designed to create."
+    )
+
+    visual_direction: str = Field(
+        description="Overall visual language, composition, texture, lighting, palette, and cinematic direction."
+    )
+
+    narrative_arc: List[str] = Field(
+        description="Ordered narrative beats from opening through final payoff."
+    )
+
+    key_messages: List[str] = Field(
+        description="Messages the audience should understand or feel after viewing."
+    )
+
+    evidence_used: List[str] = Field(
+        description="Research findings that materially influenced this concept."
+    )
+
+    production_requirements: List[str] = Field(
+        description="Assets, talent, locations, footage, graphics, audio, or production elements required."
+    )
+
+    risks_or_tradeoffs: List[str] = Field(
+        description="Creative or production risks, compromises, or dependencies associated with this concept."
+    )
+
+
+class CreativeTreatment(BaseModel):
+    recommended_concept: CreativeConcept = Field(
+        description="The strongest creative concept recommended for production."
+    )
+
+    alternate_concepts: List[CreativeConcept] = Field(
+        description="Viable alternate concepts that remain materially different from the recommended direction."
+    )
+
+    script_direction: str = Field(
+        description="High-level script and voiceover direction without pretending the final script is already approved."
+    )
+
+    visual_system: List[str] = Field(
+        description="Core visual rules that should remain consistent across the production."
+    )
+
+    audio_direction: str = Field(
+        description="Music, sound design, pacing, voice, and sonic identity guidance."
+    )
+
+    mandatory_elements: List[str] = Field(
+        description="Production Brief requirements and evidence-backed elements that must be preserved."
+    )
+
+    studio_head_approvals: List[str] = Field(
+        description="Material creative decisions requiring Studio Head approval before downstream production."
+    )
+
+    unresolved_creative_questions: List[str] = Field(
+        description="Creative uncertainties that still need resolution."
+    )
