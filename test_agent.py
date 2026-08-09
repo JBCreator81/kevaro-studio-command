@@ -24,6 +24,7 @@ async def main():
     production_schedule = None
     asset_media_plan = None
     clearance_report = None
+    verification_qa_report = None
 
     async for event in app.async_stream_query(
         user_id="studio-head-demo",
@@ -70,6 +71,10 @@ async def main():
                 if isinstance(parsed, dict) and "clearance_decision" in parsed:
                     clearance_report = parsed
 
+            elif author == "verification_qa_agent":
+                if isinstance(parsed, dict) and "qa_decision" in parsed:
+                    verification_qa_report = parsed
+
     print("\n=== PRODUCTION BRIEF ===\n")
     print(json.dumps(final_brief, indent=2) if final_brief else "No structured ProductionBrief was found.")
 
@@ -89,10 +94,13 @@ async def main():
     print(json.dumps(asset_media_plan, indent=2) if asset_media_plan else "No structured AssetMediaPlan was found.")
 
     print("\n=== CLEARANCE COMPLIANCE REPORT ===\n")
+    print(json.dumps(clearance_report, indent=2) if clearance_report else "No structured ClearanceComplianceReport was found.")
+
+    print("\n=== VERIFICATION QA REPORT ===\n")
     print(
-        json.dumps(clearance_report, indent=2)
-        if clearance_report
-        else "No structured ClearanceComplianceReport was found."
+        json.dumps(verification_qa_report, indent=2)
+        if verification_qa_report
+        else "No structured VerificationQAReport was found."
     )
 
 

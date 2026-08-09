@@ -8,6 +8,7 @@ from .models import (
     ProductionSchedule,
     AssetMediaPlan,
     ClearanceComplianceReport,
+    VerificationQAReport,
 )
 from .prompts import EXECUTIVE_PRODUCER_INSTRUCTION
 from .tools import search_web
@@ -291,9 +292,82 @@ Return a structured ClearanceComplianceReport.
 """
 
 
+VERIFICATION_QA_AGENT_INSTRUCTION = """
+You are the Verification & QA Agent for Kevaro Studio Command.
+
+You receive all completed upstream production artifacts:
+
+PRODUCTION BRIEF:
+{production_brief}
+
+RESEARCH PACKET:
+{research_packet}
+
+CREATIVE TREATMENT:
+{creative_treatment}
+
+PRODUCTION PLAN:
+{production_plan}
+
+PRODUCTION SCHEDULE:
+{production_schedule}
+
+ASSET MEDIA PLAN:
+{asset_media_plan}
+
+CLEARANCE COMPLIANCE REPORT:
+{clearance_compliance_report}
+
+Your job is to independently verify whether the production package is
+internally consistent, evidence-supported, technically coherent, complete,
+and ready for Studio Head review.
+
+CORE OPERATING RULES
+
+1. VERIFY, DO NOT CREATE
+Do not invent new creative direction or production requirements.
+Evaluate the work already produced.
+
+2. CROSS-ARTIFACT CONSISTENCY
+Compare all artifacts for contradictions in scope, concept, assets,
+schedule, format, approvals, rights, and delivery requirements.
+
+3. EVIDENCE VALIDATION
+Material claims, research conclusions, and compliance decisions must be
+traceable to evidence or explicitly classified as unresolved.
+
+4. TECHNICAL VALIDATION
+Check output formats, aspect ratios, resolutions, durations, audio standards,
+dependencies, deadlines, approval gates, and delivery assumptions.
+
+5. BLOCKER INTEGRITY
+Do not pass work that remains blocked by unresolved rights, licensing,
+brand approvals, missing evidence, or material dependencies.
+
+6. SEVERITY DISCIPLINE
+Classify findings proportionately as info, warning, major, or critical.
+
+7. READINESS SCORE
+Score readiness from 0 to 100 based on the actual state of the production,
+not optimism.
+
+8. QA DECISION
+Use PASS only when there are no material unresolved blockers.
+Use CONDITIONAL PASS when the package is substantially sound but specific
+items still require resolution.
+Use FAIL when material contradictions, missing evidence, technical defects,
+or unresolved blockers prevent safe production progression.
+
+9. ACTIONABLE REMEDIATION
+Every failed or unresolved finding must identify what must happen next.
+
+Return a structured VerificationQAReport.
+"""
+
+
 executive_producer_agent = Agent(
     name="executive_producer",
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash",
     description=(
         "Interprets Studio Head directives and converts them into "
         "structured, production-ready briefs for the autonomous production crew."
@@ -306,7 +380,7 @@ executive_producer_agent = Agent(
 
 research_agent = Agent(
     name="research_agent",
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash",
     description=(
         "Investigates research questions from the ProductionBrief and returns "
         "source-grounded production evidence."
@@ -320,7 +394,7 @@ research_agent = Agent(
 
 creative_development_agent = Agent(
     name="creative_development_agent",
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash",
     description=(
         "Transforms the ProductionBrief and ResearchPacket into a structured, "
         "evidence-grounded creative treatment."
@@ -333,7 +407,7 @@ creative_development_agent = Agent(
 
 production_manager_agent = Agent(
     name="production_manager_agent",
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash",
     description=(
         "Converts the production brief, research, and creative treatment "
         "into an executable production plan."
@@ -346,7 +420,7 @@ production_manager_agent = Agent(
 
 scheduling_agent = Agent(
     name="scheduling_agent",
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash",
     description=(
         "Transforms the ProductionPlan into a dependency-aware schedule "
         "with parallel workstreams, approval windows, critical path, and deadline risks."
@@ -359,7 +433,7 @@ scheduling_agent = Agent(
 
 asset_media_agent = Agent(
     name="asset_media_agent",
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash",
     description=(
         "Builds the production asset and media plan, including sourcing strategy, "
         "technical requirements, rights, blockers, and generation candidates."
@@ -372,7 +446,7 @@ asset_media_agent = Agent(
 
 clearance_compliance_agent = Agent(
     name="clearance_compliance_agent",
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash",
     description=(
         "Reviews production assets, claims, rights, brand requirements, "
         "platform constraints, and evidence to determine clearance status."
@@ -380,6 +454,19 @@ clearance_compliance_agent = Agent(
     instruction=CLEARANCE_COMPLIANCE_AGENT_INSTRUCTION,
     output_schema=ClearanceComplianceReport,
     output_key="clearance_compliance_report",
+)
+
+
+verification_qa_agent = Agent(
+    name="verification_qa_agent",
+    model="gemini-2.5-flash",
+    description=(
+        "Independently verifies the complete production package for consistency, "
+        "evidence support, technical validity, completeness, and readiness."
+    ),
+    instruction=VERIFICATION_QA_AGENT_INSTRUCTION,
+    output_schema=VerificationQAReport,
+    output_key="verification_qa_report",
 )
 
 
@@ -397,5 +484,6 @@ root_agent = SequentialAgent(
         scheduling_agent,
         asset_media_agent,
         clearance_compliance_agent,
+        verification_qa_agent,
     ],
 )

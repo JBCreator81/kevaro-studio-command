@@ -492,3 +492,81 @@ class ClearanceComplianceReport(BaseModel):
     next_clearance_actions: List[str] = Field(
         description="Immediate actions required to reach production clearance."
     )
+
+
+class VerificationFinding(BaseModel):
+    finding_name: str = Field(
+        description="Specific verification or QA finding."
+    )
+
+    category: str = Field(
+        description="Area being checked such as evidence, consistency, schedule, asset, compliance, technical, creative, or completeness."
+    )
+
+    severity: str = Field(
+        description="Severity such as info, warning, major, or critical."
+    )
+
+    status: str = Field(
+        description="Result such as passed, failed, unresolved, or requires review."
+    )
+
+    affected_items: List[str] = Field(
+        description="Production artifacts, tasks, assets, claims, or decisions affected by this finding."
+    )
+
+    evidence: List[str] = Field(
+        description="Evidence or artifact references supporting the finding."
+    )
+
+    remediation: str = Field(
+        description="Required corrective action, or 'none' when no correction is needed."
+    )
+
+
+class VerificationQAReport(BaseModel):
+    production_name: str = Field(
+        description="Production being verified."
+    )
+
+    findings: List[VerificationFinding] = Field(
+        description="Structured verification and QA findings."
+    )
+
+    passed_checks: List[str] = Field(
+        description="Checks that successfully passed."
+    )
+
+    failed_checks: List[str] = Field(
+        description="Checks that failed and require correction."
+    )
+
+    unresolved_items: List[str] = Field(
+        description="Items that cannot yet be verified because evidence, approval, or information is missing."
+    )
+
+    cross_artifact_conflicts: List[str] = Field(
+        description="Contradictions or mismatches between production artifacts."
+    )
+
+    technical_validation: List[str] = Field(
+        description="Technical delivery, format, schedule, asset, or production validations."
+    )
+
+    evidence_validation: List[str] = Field(
+        description="Checks confirming whether material claims and decisions are supported by evidence."
+    )
+
+    readiness_score: int = Field(
+        ge=0,
+        le=100,
+        description="Overall production readiness score from 0 to 100."
+    )
+
+    qa_decision: str = Field(
+        description="Overall QA result such as PASS, CONDITIONAL PASS, or FAIL."
+    )
+
+    next_qa_actions: List[str] = Field(
+        description="Immediate corrective or verification actions required next."
+    )
