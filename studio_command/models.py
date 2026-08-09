@@ -58,3 +58,69 @@ class ProductionBrief(BaseModel):
     risks_or_unknowns: List[str] = Field(
         description="Material uncertainties, blockers, or risks that could affect production readiness."
     )
+
+
+class EvidenceSource(BaseModel):
+    title: str = Field(
+        description="Human-readable title or name of the evidence source."
+    )
+
+    url: str = Field(
+        description="Canonical source URL when available."
+    )
+
+    publisher_or_domain: str = Field(
+        description="Publisher, organization, platform, or domain responsible for the source."
+    )
+
+    evidence_summary: str = Field(
+        description="Concise summary of the evidence relevant to the production question."
+    )
+
+    production_relevance: str = Field(
+        description="Why this evidence matters to a production decision, deliverable, constraint, or risk."
+    )
+
+    confidence: str = Field(
+        description="Evidence confidence classification: high, medium, or low."
+    )
+
+
+class ResearchEvidence(BaseModel):
+    research_question: str = Field(
+        description="The exact production research question being investigated."
+    )
+
+    finding: str = Field(
+        description="Evidence-grounded answer to the research question."
+    )
+
+    sources: List[EvidenceSource] = Field(
+        description="Sources supporting the finding."
+    )
+
+    production_impact: str = Field(
+        description="What production decision or workstream this finding should affect."
+    )
+
+    unresolved_questions: List[str] = Field(
+        description="Important uncertainties that remain after research."
+    )
+
+    requires_studio_head_decision: bool = Field(
+        description="Whether the evidence creates or materially affects a Studio Head approval gate."
+    )
+
+
+class ResearchPacket(BaseModel):
+    evidence: List[ResearchEvidence] = Field(
+        description="Evidence records produced for the Production Brief research questions."
+    )
+
+    overall_summary: str = Field(
+        description="Executive summary of the research for the production team."
+    )
+
+    blockers: List[str] = Field(
+        description="Evidence-related blockers that could prevent production work from proceeding safely."
+    )

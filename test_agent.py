@@ -18,27 +18,33 @@ async def main():
     print(directive)
 
     final_brief = None
+    research_packet = None
 
     async for event in app.async_stream_query(
         user_id="studio-head-demo",
         message=directive,
     ):
         author = event.get("author", "unknown")
+        content = event.get("content", {})
 
-        if author == "executive_producer":
-            content = event.get("content", {})
-            for part in content.get("parts", []):
-                text = part.get("text")
+        for part in content.get("parts", []):
+            text = part.get("text")
 
-                if not text:
-                    continue
+            if not text:
+                continue
 
-                try:
-                    parsed = json.loads(text)
-                    if isinstance(parsed, dict) and "production_title" in parsed:
-                        final_brief = parsed
-                except json.JSONDecodeError:
-                    pass
+            try:
+                parsed = json.loads(text)
+            except json.JSONDecodeError:
+                continue
+
+            if author == "executive_producer":
+                if isinstance(parsed, dict) and "production_title" in parsed:
+                    final_brief = parsed
+
+            if author == "research_agent":
+                if isinstance(parsed, dict) and "evidence" in parsed:
+                    research_packet = parsed
 
     print("\n=== PRODUCTION BRIEF ===\n")
 
@@ -46,6 +52,13 @@ async def main():
         print(json.dumps(final_brief, indent=2))
     else:
         print("No structured ProductionBrief was found.")
+
+    print("\n=== RESEARCH PACKET ===\n")
+
+    if research_packet:
+        print(json.dumps(research_packet, indent=2))
+    else:
+        print("No structured ResearchPacket was found.")
 
 
 if __name__ == "__main__":

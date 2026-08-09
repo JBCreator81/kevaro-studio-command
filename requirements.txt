@@ -1,3 +1,4 @@
 google-adk[a2a]
 google-cloud-aiplatform[agent_engines,adk]>=1.112
 pydantic
+parallel-web
