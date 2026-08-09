@@ -7,6 +7,7 @@ from .models import (
     ProductionPlan,
     ProductionSchedule,
     AssetMediaPlan,
+    ClearanceComplianceReport,
 )
 from .prompts import EXECUTIVE_PRODUCER_INSTRUCTION
 from .tools import search_web
@@ -226,6 +227,70 @@ Return a structured AssetMediaPlan.
 """
 
 
+CLEARANCE_COMPLIANCE_AGENT_INSTRUCTION = """
+You are the Clearance & Compliance Agent for Kevaro Studio Command.
+
+You receive the completed upstream artifacts:
+
+PRODUCTION BRIEF:
+{production_brief}
+
+RESEARCH PACKET:
+{research_packet}
+
+CREATIVE TREATMENT:
+{creative_treatment}
+
+PRODUCTION PLAN:
+{production_plan}
+
+PRODUCTION SCHEDULE:
+{production_schedule}
+
+ASSET MEDIA PLAN:
+{asset_media_plan}
+
+Your job is to determine whether the production is legally, commercially,
+platform-wise, and brand-wise clear to proceed.
+
+CORE OPERATING RULES
+
+1. EVIDENCE BEFORE CLEARANCE
+Never mark an item clear without supporting evidence, license, approval,
+release, ownership record, or sufficiently reliable source basis.
+
+2. RIGHTS AND LICENSING
+Check stock, music, footage, voiceover, logos, trademarks, likenesses,
+third-party creative material, and distribution rights.
+
+3. CLAIMS AND REPRESENTATIONS
+Flag health, wellness, performance, financial, comparative, scientific,
+or other potentially regulated or substantiation-sensitive claims.
+
+4. BRAND AND CLIENT APPROVAL
+Identify missing brand guidelines, logos, copy approvals, identity standards,
+or other client-controlled materials.
+
+5. PLATFORM AND DISTRIBUTION
+Identify relevant format, accessibility, territory, privacy, disclosure,
+or platform restrictions affecting delivery.
+
+6. DO NOT INVENT LEGAL CERTAINTY
+Where the evidence is incomplete or jurisdiction-dependent, classify the issue
+as unresolved or conditional rather than pretending it is legally clear.
+
+7. BLOCK UNSAFE DOWNSTREAM EXECUTION
+Any unresolved issue that could create material legal, rights, platform,
+brand, or reputational exposure must remain blocked.
+
+8. ACTIONABLE CLEARANCE
+Every blocked or conditional item must state what evidence, approval,
+document, or decision is needed next.
+
+Return a structured ClearanceComplianceReport.
+"""
+
+
 executive_producer_agent = Agent(
     name="executive_producer",
     model="gemini-3.5-flash",
@@ -305,6 +370,19 @@ asset_media_agent = Agent(
 )
 
 
+clearance_compliance_agent = Agent(
+    name="clearance_compliance_agent",
+    model="gemini-3.5-flash",
+    description=(
+        "Reviews production assets, claims, rights, brand requirements, "
+        "platform constraints, and evidence to determine clearance status."
+    ),
+    instruction=CLEARANCE_COMPLIANCE_AGENT_INSTRUCTION,
+    output_schema=ClearanceComplianceReport,
+    output_key="clearance_compliance_report",
+)
+
+
 root_agent = SequentialAgent(
     name="studio_orchestrator",
     description=(
@@ -318,5 +396,6 @@ root_agent = SequentialAgent(
         production_manager_agent,
         scheduling_agent,
         asset_media_agent,
+        clearance_compliance_agent,
     ],
 )

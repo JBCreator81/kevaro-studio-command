@@ -416,3 +416,79 @@ class AssetMediaPlan(BaseModel):
     next_asset_actions: List[str] = Field(
         description="Immediate asset and media actions the production crew should execute next."
     )
+
+
+class ComplianceCheck(BaseModel):
+    check_name: str = Field(
+        description="Specific legal, rights, brand, platform, or compliance check."
+    )
+
+    category: str = Field(
+        description="Compliance category such as licensing, copyright, trademark, claims, release, brand, platform, accessibility, or privacy."
+    )
+
+    applies_to: List[str] = Field(
+        description="Assets, claims, deliverables, channels, or production elements affected by this check."
+    )
+
+    status: str = Field(
+        description="Current status such as clear, blocked, requires evidence, requires approval, or unresolved."
+    )
+
+    evidence_required: List[str] = Field(
+        description="Documents, licenses, releases, source evidence, approvals, or confirmations required to clear this check."
+    )
+
+    blocking_issue: str = Field(
+        description="Material issue preventing clearance, or 'none' when no blocker exists."
+    )
+
+    approval_required: bool = Field(
+        description="Whether Studio Head or authorized human approval is required."
+    )
+
+
+class ClearanceComplianceReport(BaseModel):
+    production_name: str = Field(
+        description="Production being reviewed."
+    )
+
+    compliance_checks: List[ComplianceCheck] = Field(
+        description="Structured clearance and compliance checks for the production."
+    )
+
+    cleared_items: List[str] = Field(
+        description="Items presently supported for production use."
+    )
+
+    blocked_items: List[str] = Field(
+        description="Items that must not proceed until cleared."
+    )
+
+    unresolved_questions: List[str] = Field(
+        description="Material compliance uncertainties still requiring evidence or decision."
+    )
+
+    required_documents: List[str] = Field(
+        description="Licenses, releases, approvals, records, or other documentation required."
+    )
+
+    claim_restrictions: List[str] = Field(
+        description="Statements or representations that should be avoided, qualified, or substantiated."
+    )
+
+    distribution_constraints: List[str] = Field(
+        description="Platform, territory, format, accessibility, privacy, or usage restrictions affecting delivery."
+    )
+
+    clearance_risks: List[str] = Field(
+        description="Remaining legal, rights, brand, platform, or reputational risks."
+    )
+
+    clearance_decision: str = Field(
+        description="Overall result such as CLEAR TO PROCEED, CONDITIONAL, or BLOCKED."
+    )
+
+    next_clearance_actions: List[str] = Field(
+        description="Immediate actions required to reach production clearance."
+    )

@@ -23,6 +23,7 @@ async def main():
     production_plan = None
     production_schedule = None
     asset_media_plan = None
+    clearance_report = None
 
     async for event in app.async_stream_query(
         user_id="studio-head-demo",
@@ -65,6 +66,10 @@ async def main():
                 if isinstance(parsed, dict) and "asset_requirements" in parsed:
                     asset_media_plan = parsed
 
+            elif author == "clearance_compliance_agent":
+                if isinstance(parsed, dict) and "clearance_decision" in parsed:
+                    clearance_report = parsed
+
     print("\n=== PRODUCTION BRIEF ===\n")
     print(json.dumps(final_brief, indent=2) if final_brief else "No structured ProductionBrief was found.")
 
@@ -82,6 +87,13 @@ async def main():
 
     print("\n=== ASSET MEDIA PLAN ===\n")
     print(json.dumps(asset_media_plan, indent=2) if asset_media_plan else "No structured AssetMediaPlan was found.")
+
+    print("\n=== CLEARANCE COMPLIANCE REPORT ===\n")
+    print(
+        json.dumps(clearance_report, indent=2)
+        if clearance_report
+        else "No structured ClearanceComplianceReport was found."
+    )
 
 
 if __name__ == "__main__":
