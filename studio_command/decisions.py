@@ -167,3 +167,45 @@ def build_production_decision_history_entry(
         ),
         decision_notes=decision_record.decision_notes,
     )
+
+
+from .models import CorrectiveWorkRecord
+
+
+def build_corrective_work_record(
+    *,
+    history_entry: ProductionDecisionHistoryEntry,
+    issues_to_correct: list[str],
+    corrective_actions_completed: list[str],
+    submitted_by: str,
+) -> CorrectiveWorkRecord:
+    if history_entry.decision != "REQUEST CHANGES":
+        raise ValueError(
+            "Corrective work may only originate from a REQUEST CHANGES decision."
+        )
+
+    if history_entry.next_stage != "CORRECTIVE_WORK":
+        raise ValueError(
+            "Decision history entry is not routed to corrective work."
+        )
+
+    if not issues_to_correct:
+        raise ValueError(
+            "Corrective work must identify at least one issue to correct."
+        )
+
+    ready_for_re_review = (
+        len(corrective_actions_completed) >= len(issues_to_correct)
+        and all(action.strip() for action in corrective_actions_completed)
+    )
+
+    return CorrectiveWorkRecord(
+        production_name=history_entry.production_name,
+        source_decision_sequence=history_entry.sequence,
+        issues_to_correct=issues_to_correct,
+        corrective_actions_completed=corrective_actions_completed,
+        submitted_by=submitted_by,
+        ready_for_re_review=ready_for_re_review,
+        re_review_required=True,
+        studio_head_reapproval_required=True,
+    )

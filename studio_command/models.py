@@ -774,3 +774,37 @@ class ProductionDecisionHistoryEntry(BaseModel):
     decision_notes: str = Field(
         description="Human notes or rationale attached to this decision."
     )
+
+
+class CorrectiveWorkRecord(BaseModel):
+    production_name: str = Field(
+        description="Production receiving corrective work."
+    )
+
+    source_decision_sequence: int = Field(
+        description="Decision-history sequence that triggered corrective work."
+    )
+
+    issues_to_correct: List[str] = Field(
+        description="Specific issues or blockers that must be corrected."
+    )
+
+    corrective_actions_completed: List[str] = Field(
+        description="Corrective actions completed before re-review."
+    )
+
+    submitted_by: str = Field(
+        description="Human or production authority submitting the corrective work."
+    )
+
+    ready_for_re_review: bool = Field(
+        description="Whether the corrective package is ready to return for formal review."
+    )
+
+    re_review_required: bool = Field(
+        description="Whether the production must pass through verification and Studio Head review again."
+    )
+
+    studio_head_reapproval_required: bool = Field(
+        description="Whether a new Studio Head decision is mandatory before production may advance."
+    )

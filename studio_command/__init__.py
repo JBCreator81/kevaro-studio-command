@@ -23,3 +23,11 @@ __all__ += [
     "build_production_decision_history_entry",
     "ProductionDecisionHistoryEntry",
 ]
+
+from .decisions import build_corrective_work_record
+from .models import CorrectiveWorkRecord
+
+__all__ += [
+    "build_corrective_work_record",
+    "CorrectiveWorkRecord",
+]
