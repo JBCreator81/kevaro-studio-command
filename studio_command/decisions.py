@@ -130,3 +130,40 @@ def derive_production_workflow_state(
     raise ValueError(
         f"Unsupported Studio Head decision for workflow transition: {decision}"
     )
+
+
+from .models import ProductionDecisionHistoryEntry
+
+
+def build_production_decision_history_entry(
+    *,
+    sequence: int,
+    decision_record: StudioHeadDecisionRecord,
+    workflow_state: ProductionWorkflowState,
+) -> ProductionDecisionHistoryEntry:
+    if sequence < 1:
+        raise ValueError("Decision-history sequence must be 1 or greater.")
+
+    if decision_record.production_name != workflow_state.production_name:
+        raise ValueError(
+            "Decision record and workflow state must belong to the same production."
+        )
+
+    return ProductionDecisionHistoryEntry(
+        sequence=sequence,
+        production_name=decision_record.production_name,
+        decision=decision_record.decision,
+        decided_by=decision_record.decided_by,
+        source_recommendation=decision_record.source_recommendation,
+        recommendation_followed=decision_record.recommendation_followed,
+        resulting_status=workflow_state.status,
+        next_stage=workflow_state.next_stage,
+        production_may_advance=workflow_state.production_may_advance,
+        corrective_action_required=workflow_state.corrective_action_required,
+        production_stopped=workflow_state.production_stopped,
+        active_conditions=workflow_state.active_conditions,
+        unresolved_risks_acknowledged=(
+            decision_record.unresolved_risks_acknowledged
+        ),
+        decision_notes=decision_record.decision_notes,
+    )

@@ -15,3 +15,11 @@ __all__ += [
     "derive_production_workflow_state",
     "ProductionWorkflowState",
 ]
+
+from .decisions import build_production_decision_history_entry
+from .models import ProductionDecisionHistoryEntry
+
+__all__ += [
+    "build_production_decision_history_entry",
+    "ProductionDecisionHistoryEntry",
+]

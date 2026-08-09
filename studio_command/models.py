@@ -716,3 +716,61 @@ class ProductionWorkflowState(BaseModel):
     next_stage: str = Field(
         description="Deterministic next workflow stage resulting from the Studio Head decision."
     )
+
+
+class ProductionDecisionHistoryEntry(BaseModel):
+    sequence: int = Field(
+        description="Monotonic sequence number for this production decision event."
+    )
+
+    production_name: str = Field(
+        description="Production associated with this decision-history entry."
+    )
+
+    decision: str = Field(
+        description="Human Studio Head decision recorded for this event."
+    )
+
+    decided_by: str = Field(
+        description="Human Studio Head identity responsible for the decision."
+    )
+
+    source_recommendation: str = Field(
+        description="System recommendation presented before the human decision."
+    )
+
+    recommendation_followed: bool = Field(
+        description="Whether the human decision matched the system recommendation."
+    )
+
+    resulting_status: str = Field(
+        description="Production workflow status resulting from the human decision."
+    )
+
+    next_stage: str = Field(
+        description="Deterministic workflow stage entered after this decision."
+    )
+
+    production_may_advance: bool = Field(
+        description="Whether production may advance after this decision."
+    )
+
+    corrective_action_required: bool = Field(
+        description="Whether corrective work is required after this decision."
+    )
+
+    production_stopped: bool = Field(
+        description="Whether the production path was stopped by this decision."
+    )
+
+    active_conditions: List[str] = Field(
+        description="Conditions remaining active after this decision."
+    )
+
+    unresolved_risks_acknowledged: List[str] = Field(
+        description="Material unresolved risks acknowledged by the Studio Head."
+    )
+
+    decision_notes: str = Field(
+        description="Human notes or rationale attached to this decision."
+    )
