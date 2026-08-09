@@ -648,3 +648,41 @@ class StudioHeadDecisionPackage(BaseModel):
     final_warning: str = Field(
         description="Most important unresolved risk or 'none' if no material warning remains."
     )
+
+
+class StudioHeadDecisionRecord(BaseModel):
+    production_name: str = Field(
+        description="Production receiving the Studio Head's human decision."
+    )
+
+    decision: str = Field(
+        description="Human-selected decision: APPROVE, APPROVE WITH CONDITIONS, REQUEST CHANGES, or REJECT."
+    )
+
+    conditions: List[str] = Field(
+        description="Conditions explicitly attached by the Studio Head. Empty when none apply."
+    )
+
+    decision_notes: str = Field(
+        description="Optional Studio Head rationale, direction, or notes attached to the decision."
+    )
+
+    decided_by: str = Field(
+        description="Human authority who made the decision. Must identify the Studio Head and never an autonomous agent."
+    )
+
+    source_recommendation: str = Field(
+        description="System recommendation presented before the human decision was made."
+    )
+
+    recommendation_followed: bool = Field(
+        description="Whether the Studio Head's human decision matched the system recommendation."
+    )
+
+    unresolved_risks_acknowledged: List[str] = Field(
+        description="Material unresolved risks explicitly acknowledged as part of the human decision."
+    )
+
+    next_action: str = Field(
+        description="Required workflow action resulting from this decision."
+    )
