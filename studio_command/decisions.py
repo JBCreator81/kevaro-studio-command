@@ -73,3 +73,60 @@ def record_studio_head_decision(
         unresolved_risks_acknowledged=unresolved_risks_acknowledged,
         next_action=next_action,
     )
+
+
+from .models import ProductionWorkflowState
+
+
+def derive_production_workflow_state(
+    decision_record: StudioHeadDecisionRecord,
+) -> ProductionWorkflowState:
+    decision = decision_record.decision.strip().upper()
+
+    if decision == "APPROVE":
+        return ProductionWorkflowState(
+            production_name=decision_record.production_name,
+            status="APPROVED",
+            active_conditions=[],
+            corrective_action_required=False,
+            production_may_advance=True,
+            production_stopped=False,
+            next_stage="DOWNSTREAM_PRODUCTION",
+        )
+
+    if decision == "APPROVE WITH CONDITIONS":
+        return ProductionWorkflowState(
+            production_name=decision_record.production_name,
+            status="APPROVED_WITH_CONDITIONS",
+            active_conditions=decision_record.conditions,
+            corrective_action_required=False,
+            production_may_advance=True,
+            production_stopped=False,
+            next_stage="CONDITIONAL_DOWNSTREAM_PRODUCTION",
+        )
+
+    if decision == "REQUEST CHANGES":
+        return ProductionWorkflowState(
+            production_name=decision_record.production_name,
+            status="CHANGES_REQUESTED",
+            active_conditions=[],
+            corrective_action_required=True,
+            production_may_advance=False,
+            production_stopped=False,
+            next_stage="CORRECTIVE_WORK",
+        )
+
+    if decision == "REJECT":
+        return ProductionWorkflowState(
+            production_name=decision_record.production_name,
+            status="REJECTED",
+            active_conditions=[],
+            corrective_action_required=False,
+            production_may_advance=False,
+            production_stopped=True,
+            next_stage="STOPPED",
+        )
+
+    raise ValueError(
+        f"Unsupported Studio Head decision for workflow transition: {decision}"
+    )

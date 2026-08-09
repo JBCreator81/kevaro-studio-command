@@ -686,3 +686,33 @@ class StudioHeadDecisionRecord(BaseModel):
     next_action: str = Field(
         description="Required workflow action resulting from this decision."
     )
+
+
+class ProductionWorkflowState(BaseModel):
+    production_name: str = Field(
+        description="Production whose post-decision workflow state is being tracked."
+    )
+
+    status: str = Field(
+        description="Current production state: APPROVED, APPROVED_WITH_CONDITIONS, CHANGES_REQUESTED, or REJECTED."
+    )
+
+    active_conditions: List[str] = Field(
+        description="Human-approved conditions that remain active for this production."
+    )
+
+    corrective_action_required: bool = Field(
+        description="Whether the production must return for corrective work."
+    )
+
+    production_may_advance: bool = Field(
+        description="Whether downstream production execution may proceed."
+    )
+
+    production_stopped: bool = Field(
+        description="Whether the current production path has been stopped."
+    )
+
+    next_stage: str = Field(
+        description="Deterministic next workflow stage resulting from the Studio Head decision."
+    )
