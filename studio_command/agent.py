@@ -568,8 +568,10 @@ studio_head_decision_gate = Agent(
 root_agent = SequentialAgent(
     name="studio_orchestrator",
     description=(
-        "Kevaro Studio Command production workflow. "
-        "Creates the brief, performs evidence research, then develops the creative treatment."
+        "Kevaro Studio Command autonomous production workflow. "
+        "Transforms a Studio Head directive through executive production, evidence research, "
+        "creative development, production planning, scheduling, asset and media planning, "
+        "clearance and compliance, independent QA, and human decision preparation."
     ),
     sub_agents=[
         executive_producer_agent,

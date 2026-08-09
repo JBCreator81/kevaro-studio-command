@@ -158,7 +158,22 @@ The interface direction is cinematic, restrained, polished, highly visual, and p
 
 ## Development Status
 
-**Architecture and competition strategy locked. Clean-room foundation created. Implementation beginning from scratch.**
+Active competition build.
+
+Milestones 1-9 are complete and validated on the main branch:
+
+- Executive Producer / Orchestrator
+- Research
+- Creative Development
+- Production Manager
+- Scheduling
+- Asset & Media
+- Clearance & Compliance
+- Independent Verification & QA
+- Studio Head Decision Gate
+
+Current focus: human approval actions, corrective routing, production state,
+application runtime, Studio Command UI, and final deployment hardening.
 
 ## License
 
