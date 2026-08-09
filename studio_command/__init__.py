@@ -39,3 +39,11 @@ __all__ += [
     "build_production_re_review_record",
     "ProductionReReviewRecord",
 ]
+
+from .decisions import record_studio_head_reapproval
+from .models import StudioHeadReapprovalRecord
+
+__all__ += [
+    "record_studio_head_reapproval",
+    "StudioHeadReapprovalRecord",
+]

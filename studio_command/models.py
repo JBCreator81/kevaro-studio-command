@@ -850,3 +850,37 @@ class ProductionReReviewRecord(BaseModel):
     next_stage: str = Field(
         description="Deterministic next workflow stage for the re-review cycle."
     )
+
+
+class StudioHeadReapprovalRecord(BaseModel):
+    production_name: str = Field(
+        description="Production receiving a fresh Studio Head decision after successful re-review."
+    )
+
+    prior_decision_sequence: int = Field(
+        description="Existing decision-history sequence that remains preserved."
+    )
+
+    new_decision_sequence: int = Field(
+        description="New append-only decision-history sequence created by reapproval."
+    )
+
+    re_review_stage: str = Field(
+        description="Re-review stage authorizing return to the Studio Head."
+    )
+
+    fresh_human_decision_required: bool = Field(
+        description="Whether a fresh Studio Head decision was mandatory."
+    )
+
+    decision_record: StudioHeadDecisionRecord = Field(
+        description="Fresh human Studio Head decision."
+    )
+
+    workflow_state: ProductionWorkflowState = Field(
+        description="Workflow state derived from the fresh human decision."
+    )
+
+    history_entry: ProductionDecisionHistoryEntry = Field(
+        description="New append-only decision-history entry created from the fresh decision."
+    )
