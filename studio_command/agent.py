@@ -198,9 +198,6 @@ CREATIVE TREATMENT:
 PRODUCTION PLAN:
 {production_plan}
 
-PRODUCTION SCHEDULE:
-{production_schedule}
-
 Your job is to convert these into a complete, production-ready asset and media plan.
 
 CORE OPERATING RULES
