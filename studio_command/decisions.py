@@ -667,3 +667,127 @@ def apply_change_impact_to_runtime(
             "current_stage": current_stage,
         }
     )
+
+
+from .models import ProductionExecutionAuthorization
+
+
+def build_production_execution_authorization(
+    *,
+    runtime_state: GovernedProductionRuntimeState,
+    requested_actions: list[str],
+) -> ProductionExecutionAuthorization:
+    if not requested_actions:
+        raise ValueError(
+            "Execution authorization requires at least one requested production action."
+        )
+
+    latest_history = runtime_state.decision_history[-1]
+
+    if latest_history.production_name != runtime_state.production_name:
+        raise ValueError(
+            "Latest human decision must belong to the governed production."
+        )
+
+    human_authority_confirmed = bool(
+        latest_history.decided_by.strip()
+        and "agent" not in latest_history.decided_by.lower()
+    )
+
+    blocked_reasons: list[str] = []
+
+    if not human_authority_confirmed:
+        blocked_reasons.append(
+            "Current execution state is not backed by confirmed human Studio Head authority."
+        )
+
+    if not runtime_state.execution_authorized:
+        blocked_reasons.append(
+            "The governed runtime does not currently authorize downstream production."
+        )
+
+    if runtime_state.corrective_cycle_active:
+        blocked_reasons.append(
+            "Corrective work or re-verification is still active."
+        )
+
+    if runtime_state.current_stage == "STUDIO_HEAD_IMPACT_REVIEW":
+        blocked_reasons.append(
+            "A consequential production change is awaiting Studio Head impact review."
+        )
+
+    if runtime_state.memory_snapshot.stale_artifacts:
+        blocked_reasons.append(
+            "Production contains stale work that must be refreshed before execution."
+        )
+
+    workflow_state = runtime_state.workflow_state
+
+    if workflow_state.production_stopped:
+        blocked_reasons.append(
+            "The Studio Head stopped this production path."
+        )
+
+    if workflow_state.status == "CHANGES_REQUESTED":
+        blocked_reasons.append(
+            "The Studio Head requested changes before production may continue."
+        )
+
+    if workflow_state.status == "REJECTED":
+        blocked_reasons.append(
+            "The Studio Head rejected the current production path."
+        )
+
+    if blocked_reasons:
+        return ProductionExecutionAuthorization(
+            production_name=runtime_state.production_name,
+            decision_sequence=latest_history.sequence,
+            authorization_status="BLOCKED",
+            execution_mode="BLOCKED",
+            source_stage=runtime_state.current_stage,
+            active_conditions=workflow_state.active_conditions,
+            authorized_actions=[],
+            blocked_actions=requested_actions,
+            blockers=blocked_reasons,
+            human_authority_confirmed=human_authority_confirmed,
+            may_execute=False,
+        )
+
+    if workflow_state.status == "APPROVED_WITH_CONDITIONS":
+        authorization_status = "AUTHORIZED_WITH_CONDITIONS"
+        execution_mode = "CONDITIONAL"
+        active_conditions = workflow_state.active_conditions
+    elif workflow_state.status == "APPROVED":
+        authorization_status = "AUTHORIZED"
+        execution_mode = "UNCONDITIONAL"
+        active_conditions = []
+    else:
+        return ProductionExecutionAuthorization(
+            production_name=runtime_state.production_name,
+            decision_sequence=latest_history.sequence,
+            authorization_status="BLOCKED",
+            execution_mode="BLOCKED",
+            source_stage=runtime_state.current_stage,
+            active_conditions=workflow_state.active_conditions,
+            authorized_actions=[],
+            blocked_actions=requested_actions,
+            blockers=[
+                f"Workflow status {workflow_state.status} does not authorize downstream execution."
+            ],
+            human_authority_confirmed=human_authority_confirmed,
+            may_execute=False,
+        )
+
+    return ProductionExecutionAuthorization(
+        production_name=runtime_state.production_name,
+        decision_sequence=latest_history.sequence,
+        authorization_status=authorization_status,
+        execution_mode=execution_mode,
+        source_stage=runtime_state.current_stage,
+        active_conditions=active_conditions,
+        authorized_actions=requested_actions,
+        blocked_actions=[],
+        blockers=[],
+        human_authority_confirmed=True,
+        may_execute=True,
+    )

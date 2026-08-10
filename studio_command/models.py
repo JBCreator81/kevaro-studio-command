@@ -1015,3 +1015,39 @@ class GovernedProductionRuntimeState(BaseModel):
     current_stage: str = Field(
         description="Unified runtime stage presented to downstream orchestration."
     )
+
+
+class ProductionExecutionAuthorization(BaseModel):
+    production_name: str = Field(
+        description="Production receiving governed authorization for downstream execution."
+    )
+    decision_sequence: int = Field(
+        description="Latest human Studio Head decision sequence authorizing or blocking execution."
+    )
+    authorization_status: str = Field(
+        description="AUTHORIZED, AUTHORIZED_WITH_CONDITIONS, or BLOCKED."
+    )
+    execution_mode: str = Field(
+        description="UNCONDITIONAL, CONDITIONAL, or BLOCKED execution mode."
+    )
+    source_stage: str = Field(
+        description="Governed runtime stage from which execution authorization was evaluated."
+    )
+    active_conditions: List[str] = Field(
+        description="Studio Head conditions that must remain attached to downstream execution."
+    )
+    authorized_actions: List[str] = Field(
+        description="Production actions presently authorized to move into downstream execution."
+    )
+    blocked_actions: List[str] = Field(
+        description="Production actions that must not execute in the current governed state."
+    )
+    blockers: List[str] = Field(
+        description="Reasons downstream production execution is blocked or constrained."
+    )
+    human_authority_confirmed: bool = Field(
+        description="Whether the authorization traces to a current human Studio Head decision."
+    )
+    may_execute: bool = Field(
+        description="Whether downstream production actions may execute now."
+    )
