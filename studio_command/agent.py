@@ -1,3 +1,5 @@
+from google.adk.workflow import FunctionNode
+from google.adk.events import Event
 from google.adk.agents import Agent, SequentialAgent
 from google.adk import Workflow
 from google.adk.workflow import JoinNode
@@ -597,6 +599,44 @@ production_planning_join = JoinNode(
     ),
 )
 
+
+def _merge_parallel_planning_state(ctx, node_input):
+    """Promote joined parallel planning outputs into shared workflow state."""
+
+    schedule_branch = node_input["scheduling_agent"]
+    asset_branch = node_input["asset_media_agent"]
+
+    if (
+        isinstance(schedule_branch, dict)
+        and "production_schedule" in schedule_branch
+    ):
+        production_schedule = schedule_branch["production_schedule"]
+    else:
+        production_schedule = schedule_branch
+
+    if (
+        isinstance(asset_branch, dict)
+        and "asset_media_plan" in asset_branch
+    ):
+        asset_media_plan = asset_branch["asset_media_plan"]
+    else:
+        asset_media_plan = asset_branch
+
+    ctx.state["production_schedule"] = production_schedule
+    ctx.state["asset_media_plan"] = asset_media_plan
+
+    return {
+        "production_schedule": production_schedule,
+        "asset_media_plan": asset_media_plan,
+    }
+
+
+production_planning_merge = FunctionNode(
+    name="production_planning_merge",
+    func=_merge_parallel_planning_state,
+)
+
+
 studio_production_workflow = Workflow(
     name="kevaro_studio_production_workflow",
     description=(
@@ -616,6 +656,7 @@ studio_production_workflow = Workflow(
                 asset_media_agent,
             ),
             production_planning_join,
+            production_planning_merge,
             clearance_compliance_agent,
             verification_qa_agent,
             studio_head_decision_gate,
