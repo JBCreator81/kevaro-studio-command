@@ -47,3 +47,28 @@ __all__ += [
     "record_studio_head_reapproval",
     "StudioHeadReapprovalRecord",
 ]
+
+from .decisions import (
+    build_governed_production_runtime_state,
+    analyze_production_change_impact,
+    build_studio_head_impact_brief,
+    apply_change_impact_to_runtime,
+)
+
+from .models import (
+    ProductionMemorySnapshot,
+    ProductionChangeImpact,
+    StudioHeadImpactBrief,
+    GovernedProductionRuntimeState,
+)
+
+__all__ += [
+    "build_governed_production_runtime_state",
+    "analyze_production_change_impact",
+    "build_studio_head_impact_brief",
+    "apply_change_impact_to_runtime",
+    "ProductionMemorySnapshot",
+    "ProductionChangeImpact",
+    "StudioHeadImpactBrief",
+    "GovernedProductionRuntimeState",
+]

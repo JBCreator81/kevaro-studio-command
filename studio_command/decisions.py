@@ -351,3 +351,319 @@ def record_studio_head_reapproval(
         workflow_state=fresh_workflow_state,
         history_entry=fresh_history_entry,
     )
+
+
+from .models import (
+    GovernedProductionRuntimeState,
+    ProductionMemorySnapshot,
+)
+
+
+def build_governed_production_runtime_state(
+    *,
+    workflow_state: ProductionWorkflowState,
+    decision_history: list[ProductionDecisionHistoryEntry],
+    preserved_artifacts: list[str],
+    stale_artifacts: list[str] | None = None,
+) -> GovernedProductionRuntimeState:
+    if not decision_history:
+        raise ValueError(
+            "Unified runtime requires at least one Studio Head decision-history entry."
+        )
+
+    latest_history = decision_history[-1]
+
+    if latest_history.production_name != workflow_state.production_name:
+        raise ValueError(
+            "Latest decision history and workflow state must belong to the same production."
+        )
+
+    expected_sequence = list(range(1, len(decision_history) + 1))
+    actual_sequence = [entry.sequence for entry in decision_history]
+
+    if actual_sequence != expected_sequence:
+        raise ValueError(
+            "Decision history must be append-only and sequential beginning at 1."
+        )
+
+    if latest_history.resulting_status != workflow_state.status:
+        raise ValueError(
+            "Latest decision history must match the current workflow state."
+        )
+
+    execution_authorized = (
+        workflow_state.production_may_advance
+        and not workflow_state.production_stopped
+        and workflow_state.next_stage
+        in {
+            "DOWNSTREAM_PRODUCTION",
+            "CONDITIONAL_DOWNSTREAM_PRODUCTION",
+        }
+    )
+
+    corrective_cycle_active = (
+        workflow_state.corrective_action_required
+        or workflow_state.next_stage
+        in {
+            "CORRECTIVE_WORK",
+            "INDEPENDENT_RE_VERIFICATION",
+            "STUDIO_HEAD_REAPPROVAL",
+        }
+    )
+
+    current_stage = workflow_state.next_stage
+
+    memory_snapshot = ProductionMemorySnapshot(
+        production_name=workflow_state.production_name,
+        current_stage=current_stage,
+        active_decision_sequence=latest_history.sequence,
+        approved_status=workflow_state.status,
+        active_conditions=workflow_state.active_conditions,
+        preserved_artifacts=preserved_artifacts,
+        stale_artifacts=stale_artifacts or [],
+        known_good_state=not workflow_state.production_stopped,
+    )
+
+    return GovernedProductionRuntimeState(
+        production_name=workflow_state.production_name,
+        workflow_state=workflow_state,
+        decision_history=decision_history,
+        memory_snapshot=memory_snapshot,
+        change_impact=None,
+        impact_brief=None,
+        execution_authorized=execution_authorized,
+        corrective_cycle_active=corrective_cycle_active,
+        current_stage=current_stage,
+    )
+
+
+from .models import (
+    ProductionChangeImpact,
+    StudioHeadImpactBrief,
+)
+
+
+def analyze_production_change_impact(
+    *,
+    runtime_state: GovernedProductionRuntimeState,
+    requested_change: str,
+    affected_work: list[str],
+    preserved_work: list[str],
+    approvals_invalidated: list[str],
+    clearance_recheck_required: bool,
+    qa_reverification_required: bool,
+    schedule_impact: str,
+    delivery_impact: str,
+) -> ProductionChangeImpact:
+    if not requested_change.strip():
+        raise ValueError(
+            "A production change must include a clear requested change."
+        )
+
+    if not affected_work:
+        raise ValueError(
+            "Change-impact analysis must identify at least one affected production item."
+        )
+
+    overlap = set(affected_work) & set(preserved_work)
+
+    if overlap:
+        raise ValueError(
+            "Affected work and preserved work must not overlap."
+        )
+
+    stale_work = list(dict.fromkeys(affected_work))
+
+    return ProductionChangeImpact(
+        production_name=runtime_state.production_name,
+        requested_change=requested_change.strip(),
+        affected_work=affected_work,
+        preserved_work=preserved_work,
+        stale_work=stale_work,
+        approvals_invalidated=approvals_invalidated,
+        clearance_recheck_required=clearance_recheck_required,
+        qa_reverification_required=qa_reverification_required,
+        schedule_impact=schedule_impact.strip(),
+        delivery_impact=delivery_impact.strip(),
+    )
+
+
+def build_studio_head_impact_brief(
+    *,
+    runtime_state: GovernedProductionRuntimeState,
+    command: str,
+    change_impact: ProductionChangeImpact,
+    scope_confirmed: bool,
+    stale_decision_detected: bool,
+) -> StudioHeadImpactBrief:
+    if change_impact.production_name != runtime_state.production_name:
+        raise ValueError(
+            "Change impact and runtime state must belong to the same production."
+        )
+
+    if not command.strip():
+        raise ValueError(
+            "Studio Head command must not be empty."
+        )
+
+    conflict_detected = (
+        bool(change_impact.approvals_invalidated)
+        or change_impact.clearance_recheck_required
+        or change_impact.qa_reverification_required
+        or stale_decision_detected
+        or not scope_confirmed
+    )
+
+    high_impact = (
+        stale_decision_detected
+        or not scope_confirmed
+        or bool(change_impact.approvals_invalidated)
+        or change_impact.clearance_recheck_required
+        or change_impact.qa_reverification_required
+    )
+
+    if high_impact:
+        impact_level = "HIGH"
+    elif len(change_impact.affected_work) > 1:
+        impact_level = "CONSEQUENTIAL"
+    else:
+        impact_level = "LOW"
+
+    human_confirmation_required = impact_level in {
+        "CONSEQUENTIAL",
+        "HIGH",
+    }
+
+    may_execute = (
+        scope_confirmed
+        and not stale_decision_detected
+        and not change_impact.clearance_recheck_required
+        and not change_impact.qa_reverification_required
+        and not change_impact.approvals_invalidated
+    )
+
+    affected_summary = ", ".join(change_impact.affected_work)
+
+    if change_impact.preserved_work:
+        preserved_summary = ", ".join(change_impact.preserved_work)
+    else:
+        preserved_summary = "No unaffected production work was identified."
+
+    production_explanation = (
+        f"This command affects {affected_summary}. "
+        f"The following work remains valid and should be protected: "
+        f"{preserved_summary}. "
+        f"Schedule impact: {change_impact.schedule_impact} "
+        f"Delivery impact: {change_impact.delivery_impact}"
+    )
+
+    if may_execute:
+        recommended_path = (
+            "Proceed with the requested change while preserving unaffected work."
+        )
+    else:
+        recommended_path = (
+            "Hold execution, resolve the flagged production impacts, "
+            "refresh any invalid approvals or clearance, re-verify affected work, "
+            "then return to the Studio Head for an informed decision."
+        )
+
+    return StudioHeadImpactBrief(
+        production_name=runtime_state.production_name,
+        command=command.strip(),
+        impact_level=impact_level,
+        conflict_detected=conflict_detected,
+        stale_decision_detected=stale_decision_detected,
+        scope_confirmed=scope_confirmed,
+        production_explanation=production_explanation,
+        affected_work=change_impact.affected_work,
+        preserved_work=change_impact.preserved_work,
+        recommended_path=recommended_path,
+        human_confirmation_required=human_confirmation_required,
+        may_execute=may_execute,
+    )
+
+
+def apply_change_impact_to_runtime(
+    *,
+    runtime_state: GovernedProductionRuntimeState,
+    change_impact: ProductionChangeImpact,
+    impact_brief: StudioHeadImpactBrief,
+) -> GovernedProductionRuntimeState:
+    if change_impact.production_name != runtime_state.production_name:
+        raise ValueError(
+            "Change impact and runtime state must belong to the same production."
+        )
+
+    if impact_brief.production_name != runtime_state.production_name:
+        raise ValueError(
+            "Impact Brief and runtime state must belong to the same production."
+        )
+
+    if impact_brief.command.strip() != change_impact.requested_change.strip():
+        raise ValueError(
+            "Impact Brief command must match the analyzed production change."
+        )
+
+    existing_preserved = list(
+        runtime_state.memory_snapshot.preserved_artifacts
+    )
+    existing_stale = list(
+        runtime_state.memory_snapshot.stale_artifacts
+    )
+
+    stale_set = set(existing_stale) | set(change_impact.stale_work)
+
+    updated_preserved = [
+        item
+        for item in existing_preserved
+        if item not in stale_set
+    ]
+
+    for item in change_impact.preserved_work:
+        if (
+            item not in updated_preserved
+            and item not in stale_set
+        ):
+            updated_preserved.append(item)
+
+    updated_stale = list(
+        dict.fromkeys(existing_stale + change_impact.stale_work)
+    )
+
+    guarded = (
+        impact_brief.human_confirmation_required
+        or not impact_brief.may_execute
+    )
+
+    if guarded:
+        execution_authorized = False
+        current_stage = "STUDIO_HEAD_IMPACT_REVIEW"
+    else:
+        execution_authorized = runtime_state.execution_authorized
+        current_stage = runtime_state.current_stage
+
+    updated_memory = runtime_state.memory_snapshot.model_copy(
+        update={
+            "current_stage": current_stage,
+            "preserved_artifacts": updated_preserved,
+            "stale_artifacts": updated_stale,
+            "known_good_state": True,
+        }
+    )
+
+    return runtime_state.model_copy(
+        update={
+            "memory_snapshot": updated_memory,
+            "change_impact": change_impact,
+            "impact_brief": impact_brief,
+            "execution_authorized": execution_authorized,
+            "corrective_cycle_active": (
+                runtime_state.corrective_cycle_active
+                or bool(change_impact.stale_work)
+                or change_impact.qa_reverification_required
+                or change_impact.clearance_recheck_required
+            ),
+            "current_stage": current_stage,
+        }
+    )

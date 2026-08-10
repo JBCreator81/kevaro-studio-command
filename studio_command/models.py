@@ -884,3 +884,134 @@ class StudioHeadReapprovalRecord(BaseModel):
     history_entry: ProductionDecisionHistoryEntry = Field(
         description="New append-only decision-history entry created from the fresh decision."
     )
+
+
+class ProductionMemorySnapshot(BaseModel):
+    production_name: str = Field(
+        description="Production whose current known-good state is being preserved."
+    )
+    current_stage: str = Field(
+        description="Current governed production stage."
+    )
+    active_decision_sequence: int = Field(
+        description="Latest valid append-only Studio Head decision sequence."
+    )
+    approved_status: str = Field(
+        description="Current approval state derived from the latest human decision."
+    )
+    active_conditions: List[str] = Field(
+        description="Human-approved conditions that remain active."
+    )
+    preserved_artifacts: List[str] = Field(
+        description="Production artifacts currently considered valid and preserved."
+    )
+    stale_artifacts: List[str] = Field(
+        description="Artifacts invalidated by a production change and awaiting refresh."
+    )
+    known_good_state: bool = Field(
+        description="Whether this snapshot represents a recoverable known-good state."
+    )
+
+
+class ProductionChangeImpact(BaseModel):
+    production_name: str = Field(
+        description="Production affected by a proposed command or change."
+    )
+    requested_change: str = Field(
+        description="Plain-language description of the requested production change."
+    )
+    affected_work: List[str] = Field(
+        description="Production work directly or transitively affected by the change."
+    )
+    preserved_work: List[str] = Field(
+        description="Existing production work that remains valid and should not be restarted."
+    )
+    stale_work: List[str] = Field(
+        description="Previously valid work that becomes stale because of the change."
+    )
+    approvals_invalidated: List[str] = Field(
+        description="Prior approvals that must no longer be treated as current."
+    )
+    clearance_recheck_required: bool = Field(
+        description="Whether rights, claims, brand, platform, or other clearance must be checked again."
+    )
+    qa_reverification_required: bool = Field(
+        description="Whether affected work must pass independent QA again."
+    )
+    schedule_impact: str = Field(
+        description="Plain studio-language explanation of expected schedule consequences."
+    )
+    delivery_impact: str = Field(
+        description="Plain studio-language explanation of expected delivery consequences."
+    )
+
+
+class StudioHeadImpactBrief(BaseModel):
+    production_name: str = Field(
+        description="Production receiving a consequential Studio Head command."
+    )
+    command: str = Field(
+        description="Studio Head command being evaluated before execution."
+    )
+    impact_level: str = Field(
+        description="LOW, CONSEQUENTIAL, or HIGH impact classification."
+    )
+    conflict_detected: bool = Field(
+        description="Whether the command conflicts with active work, approvals, state, evidence, clearance, QA, or delivery."
+    )
+    stale_decision_detected: bool = Field(
+        description="Whether the command relies on an approval package or production state that is no longer current."
+    )
+    scope_confirmed: bool = Field(
+        description="Whether the production scope of the command is sufficiently clear for execution."
+    )
+    production_explanation: str = Field(
+        description="Plain studio-language explanation of how the command affects production."
+    )
+    affected_work: List[str] = Field(
+        description="Affected scenes, assets, shoots, edits, approvals, or workstreams."
+    )
+    preserved_work: List[str] = Field(
+        description="Work that remains valid and should be protected."
+    )
+    recommended_path: str = Field(
+        description="Kevaro's recommended governed production path."
+    )
+    human_confirmation_required: bool = Field(
+        description="Whether deliberate Studio Head confirmation is required before execution."
+    )
+    may_execute: bool = Field(
+        description="Whether the command is currently permitted to execute."
+    )
+
+
+class GovernedProductionRuntimeState(BaseModel):
+    production_name: str = Field(
+        description="Production controlled by the unified governed runtime."
+    )
+    workflow_state: ProductionWorkflowState = Field(
+        description="Current deterministic production workflow state."
+    )
+    decision_history: List[ProductionDecisionHistoryEntry] = Field(
+        description="Append-only Studio Head decision history preserved by the runtime."
+    )
+    memory_snapshot: ProductionMemorySnapshot = Field(
+        description="Current Production Memory snapshot."
+    )
+    change_impact: ProductionChangeImpact | None = Field(
+        default=None,
+        description="Most recent production change-impact analysis when a change is pending."
+    )
+    impact_brief: StudioHeadImpactBrief | None = Field(
+        default=None,
+        description="Current Studio Head Impact Brief when a consequential command requires review."
+    )
+    execution_authorized: bool = Field(
+        description="Whether the production is currently authorized to move into downstream execution."
+    )
+    corrective_cycle_active: bool = Field(
+        description="Whether affected work is currently routed through correction and re-verification."
+    )
+    current_stage: str = Field(
+        description="Unified runtime stage presented to downstream orchestration."
+    )
