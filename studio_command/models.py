@@ -1051,3 +1051,61 @@ class ProductionExecutionAuthorization(BaseModel):
     may_execute: bool = Field(
         description="Whether downstream production actions may execute now."
     )
+
+
+class ProductionGraphNode(BaseModel):
+    node_id: str = Field(
+        description="Stable identifier for a production graph node."
+    )
+    task_name: str = Field(
+        description="Human-readable production task represented by this node."
+    )
+    responsible_role: str = Field(
+        description="Agent or production role responsible for this node."
+    )
+    dependencies: List[str] = Field(
+        description="Node IDs that must complete before this node may execute."
+    )
+    dependents: List[str] = Field(
+        description="Node IDs directly downstream from this node."
+    )
+    status: str = Field(
+        description="PENDING, READY, RUNNING, COMPLETED, BLOCKED, STALE, or FAILED."
+    )
+    can_run_in_parallel_with: List[str] = Field(
+        description="Other node IDs that may safely execute concurrently."
+    )
+    approval_required: bool = Field(
+        description="Whether this node is gated by Studio Head approval."
+    )
+    stale_reason: str | None = Field(
+        default=None,
+        description="Reason this node became stale and must be rerun."
+    )
+
+
+class ProductionGraphState(BaseModel):
+    production_name: str = Field(
+        description="Production represented by this dependency-aware graph."
+    )
+    nodes: List[ProductionGraphNode] = Field(
+        description="All nodes in the live production graph."
+    )
+    ready_nodes: List[str] = Field(
+        description="Node IDs whose dependencies are satisfied and may execute."
+    )
+    running_nodes: List[str] = Field(
+        description="Node IDs currently executing."
+    )
+    completed_nodes: List[str] = Field(
+        description="Node IDs successfully completed."
+    )
+    blocked_nodes: List[str] = Field(
+        description="Node IDs prevented from running."
+    )
+    stale_nodes: List[str] = Field(
+        description="Previously completed or valid node IDs invalidated by a change."
+    )
+    graph_complete: bool = Field(
+        description="Whether all required production nodes are completed."
+    )
