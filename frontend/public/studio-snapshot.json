@@ -1,0 +1,209 @@
+{
+  "production_name": "Luxury Wellness Campaign",
+  "current_stage": "READY_FOR_DELIVERY",
+  "approval_status": "APPROVED",
+  "decision_sequence": 1,
+  "execution_authorized": true,
+  "corrective_cycle_active": false,
+  "active_conditions": [],
+  "preserved_artifacts": [
+    "Production Brief",
+    "Research Packet",
+    "Creative Treatment",
+    "Production Plan",
+    "Production Schedule",
+    "Asset Media Plan",
+    "Clearance Report",
+    "Verification QA Report",
+    "Final Production Package"
+  ],
+  "stale_artifacts": [],
+  "graph": {
+    "ready_nodes": [],
+    "running_nodes": [],
+    "completed_nodes": [
+      "Production Brief",
+      "Research",
+      "Creative Development",
+      "Production Planning",
+      "Scheduling",
+      "Asset & Media",
+      "Clearance & Compliance",
+      "Verification QA",
+      "Studio Head Decision",
+      "Final Package"
+    ],
+    "blocked_nodes": [],
+    "stale_nodes": [],
+    "graph_complete": true,
+    "nodes": [
+      {
+        "node_id": "Production Brief",
+        "task_name": "Production Brief",
+        "responsible_role": "Executive Producer",
+        "dependencies": [],
+        "dependents": [
+          "Research"
+        ],
+        "status": "COMPLETED",
+        "parallel_with": [],
+        "approval_required": false,
+        "stale_reason": null
+      },
+      {
+        "node_id": "Research",
+        "task_name": "Research",
+        "responsible_role": "Research Agent",
+        "dependencies": [
+          "Production Brief"
+        ],
+        "dependents": [
+          "Creative Development"
+        ],
+        "status": "COMPLETED",
+        "parallel_with": [],
+        "approval_required": false,
+        "stale_reason": null
+      },
+      {
+        "node_id": "Creative Development",
+        "task_name": "Creative Development",
+        "responsible_role": "Creative Development Agent",
+        "dependencies": [
+          "Research"
+        ],
+        "dependents": [
+          "Production Planning"
+        ],
+        "status": "COMPLETED",
+        "parallel_with": [],
+        "approval_required": false,
+        "stale_reason": null
+      },
+      {
+        "node_id": "Production Planning",
+        "task_name": "Production Planning",
+        "responsible_role": "Production Manager",
+        "dependencies": [
+          "Creative Development"
+        ],
+        "dependents": [
+          "Scheduling",
+          "Asset & Media"
+        ],
+        "status": "COMPLETED",
+        "parallel_with": [],
+        "approval_required": false,
+        "stale_reason": null
+      },
+      {
+        "node_id": "Scheduling",
+        "task_name": "Scheduling",
+        "responsible_role": "Scheduling Agent",
+        "dependencies": [
+          "Production Planning"
+        ],
+        "dependents": [
+          "Clearance & Compliance"
+        ],
+        "status": "COMPLETED",
+        "parallel_with": [
+          "Asset & Media"
+        ],
+        "approval_required": false,
+        "stale_reason": null
+      },
+      {
+        "node_id": "Asset & Media",
+        "task_name": "Asset & Media",
+        "responsible_role": "Asset & Media Agent",
+        "dependencies": [
+          "Production Planning"
+        ],
+        "dependents": [
+          "Clearance & Compliance"
+        ],
+        "status": "COMPLETED",
+        "parallel_with": [
+          "Scheduling"
+        ],
+        "approval_required": false,
+        "stale_reason": null
+      },
+      {
+        "node_id": "Clearance & Compliance",
+        "task_name": "Clearance & Compliance",
+        "responsible_role": "Clearance Agent",
+        "dependencies": [
+          "Scheduling",
+          "Asset & Media"
+        ],
+        "dependents": [
+          "Verification QA"
+        ],
+        "status": "COMPLETED",
+        "parallel_with": [],
+        "approval_required": false,
+        "stale_reason": null
+      },
+      {
+        "node_id": "Verification QA",
+        "task_name": "Verification QA",
+        "responsible_role": "Independent QA Agent",
+        "dependencies": [
+          "Clearance & Compliance"
+        ],
+        "dependents": [
+          "Studio Head Decision"
+        ],
+        "status": "COMPLETED",
+        "parallel_with": [],
+        "approval_required": false,
+        "stale_reason": null
+      },
+      {
+        "node_id": "Studio Head Decision",
+        "task_name": "Studio Head Decision",
+        "responsible_role": "Studio Head",
+        "dependencies": [
+          "Verification QA"
+        ],
+        "dependents": [
+          "Final Package"
+        ],
+        "status": "COMPLETED",
+        "parallel_with": [],
+        "approval_required": true,
+        "stale_reason": null
+      },
+      {
+        "node_id": "Final Package",
+        "task_name": "Final Package",
+        "responsible_role": "Kevaro Delivery Runtime",
+        "dependencies": [
+          "Studio Head Decision"
+        ],
+        "dependents": [],
+        "status": "COMPLETED",
+        "parallel_with": [],
+        "approval_required": false,
+        "stale_reason": null
+      }
+    ]
+  },
+  "delivery": {
+    "status": "READY_FOR_DELIVERY",
+    "readiness_score": 100,
+    "delivery_artifacts": [
+      "Hero Campaign Master",
+      "Social Cutdowns",
+      "Production Evidence Package",
+      "Governance & QA Record"
+    ],
+    "final_notes": [
+      "Independent QA passed.",
+      "Clearance complete.",
+      "Studio Head approval recorded."
+    ]
+  }
+}
