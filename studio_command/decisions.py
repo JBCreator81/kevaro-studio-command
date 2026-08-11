@@ -791,3 +791,141 @@ def build_production_execution_authorization(
         human_authority_confirmed=True,
         may_execute=True,
     )
+
+from .models import (
+    AssetMediaPlan,
+    ClearanceComplianceReport,
+    CreativeTreatment,
+    FinalProductionPackage,
+    ProductionBrief,
+    ProductionExecutionAuthorization,
+    ProductionPlan,
+    ProductionSchedule,
+    ResearchPacket,
+    VerificationQAReport,
+)
+
+
+def build_final_production_package(
+    *,
+    runtime_state: GovernedProductionRuntimeState,
+    execution_authorization: ProductionExecutionAuthorization,
+    production_brief: ProductionBrief,
+    research_packet: ResearchPacket,
+    creative_treatment: CreativeTreatment,
+    production_plan: ProductionPlan,
+    production_schedule: ProductionSchedule,
+    asset_media_plan: AssetMediaPlan,
+    clearance_report: ClearanceComplianceReport,
+    verification_report: VerificationQAReport,
+    delivery_artifacts: list[str],
+    final_notes: list[str] | None = None,
+) -> FinalProductionPackage:
+    """Assemble the final governed package only from an authorized production state."""
+
+    if not runtime_state.decision_history:
+        raise ValueError(
+            "Final production package requires human Studio Head decision history."
+        )
+
+    latest_history = runtime_state.decision_history[-1]
+
+    production_name = runtime_state.production_name
+
+    named_artifacts = {
+        "production_plan": production_plan.production_name,
+        "production_schedule": production_schedule.production_name,
+        "asset_media_plan": asset_media_plan.production_name,
+        "clearance_report": clearance_report.production_name,
+        "verification_report": verification_report.production_name,
+    }
+
+    mismatched = [
+        name
+        for name, artifact_production_name in named_artifacts.items()
+        if artifact_production_name != production_name
+    ]
+
+    if mismatched:
+        raise ValueError(
+            f"Final package contains artifacts from another production: {mismatched}"
+        )
+
+    if latest_history.production_name != production_name:
+        raise ValueError(
+            "Latest Studio Head decision does not belong to this production."
+        )
+
+    if execution_authorization.production_name != production_name:
+        raise ValueError(
+            "Execution authorization does not belong to this production."
+        )
+
+    if execution_authorization.decision_sequence != latest_history.sequence:
+        raise ValueError(
+            "Execution authorization must match the latest human decision sequence."
+        )
+
+    if not runtime_state.execution_authorized:
+        raise ValueError(
+            "Governed runtime does not authorize final production execution."
+        )
+
+    if not execution_authorization.may_execute:
+        raise ValueError(
+            "Final package cannot be assembled while execution is blocked."
+        )
+
+    if runtime_state.corrective_cycle_active:
+        raise ValueError(
+            "Final package cannot be assembled while corrective work is active."
+        )
+
+    if runtime_state.memory_snapshot.stale_artifacts:
+        raise ValueError(
+            "Final package cannot include stale production artifacts."
+        )
+
+    if clearance_report.clearance_decision.strip().upper() == "BLOCKED":
+        raise ValueError(
+            "Final package cannot be delivered while clearance is blocked."
+        )
+
+    if verification_report.qa_decision.strip().upper() == "FAIL":
+        raise ValueError(
+            "Final package cannot be delivered after a failed QA decision."
+        )
+
+    if not delivery_artifacts:
+        raise ValueError(
+            "Final package requires at least one delivery artifact."
+        )
+
+    delivery_status = "READY_FOR_DELIVERY"
+
+    notes = list(final_notes or [])
+
+    for condition in runtime_state.workflow_state.active_conditions:
+        if condition not in notes:
+            notes.append(f"ACTIVE CONDITION: {condition}")
+
+    return FinalProductionPackage(
+        production_name=production_name,
+        decision_sequence=latest_history.sequence,
+        approval_status=runtime_state.workflow_state.status,
+        active_conditions=runtime_state.workflow_state.active_conditions,
+        production_brief=production_brief,
+        research_packet=research_packet,
+        creative_treatment=creative_treatment,
+        production_plan=production_plan,
+        production_schedule=production_schedule,
+        asset_media_plan=asset_media_plan,
+        clearance_report=clearance_report,
+        verification_report=verification_report,
+        decision_history=runtime_state.decision_history,
+        authorized_actions=execution_authorization.authorized_actions,
+        delivery_artifacts=delivery_artifacts,
+        delivery_status=delivery_status,
+        readiness_score=verification_report.readiness_score,
+        final_notes=notes,
+    )

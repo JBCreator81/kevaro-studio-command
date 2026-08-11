@@ -1109,3 +1109,78 @@ class ProductionGraphState(BaseModel):
     graph_complete: bool = Field(
         description="Whether all required production nodes are completed."
     )
+
+class FinalProductionPackage(BaseModel):
+    production_name: str = Field(
+        description="Production represented by the final governed delivery package."
+    )
+
+    decision_sequence: int = Field(
+        description="Latest append-only human Studio Head decision sequence governing delivery."
+    )
+
+    approval_status: str = Field(
+        description="Final governed approval status inherited from the production runtime."
+    )
+
+    active_conditions: List[str] = Field(
+        description="Studio Head conditions that remain attached to final delivery."
+    )
+
+    production_brief: ProductionBrief = Field(
+        description="Approved production brief included in the final package."
+    )
+
+    research_packet: ResearchPacket = Field(
+        description="Evidence and research supporting the production."
+    )
+
+    creative_treatment: CreativeTreatment = Field(
+        description="Approved creative direction included in the final package."
+    )
+
+    production_plan: ProductionPlan = Field(
+        description="Final governed production execution plan."
+    )
+
+    production_schedule: ProductionSchedule = Field(
+        description="Final dependency-aware production schedule."
+    )
+
+    asset_media_plan: AssetMediaPlan = Field(
+        description="Final production asset and media plan."
+    )
+
+    clearance_report: ClearanceComplianceReport = Field(
+        description="Final clearance and compliance record."
+    )
+
+    verification_report: VerificationQAReport = Field(
+        description="Final independent verification and QA record."
+    )
+
+    decision_history: List[ProductionDecisionHistoryEntry] = Field(
+        description="Append-only human Studio Head decision history."
+    )
+
+    authorized_actions: List[str] = Field(
+        description="Production actions authorized for final execution or delivery."
+    )
+
+    delivery_artifacts: List[str] = Field(
+        description="Final deliverable artifact references included in the package."
+    )
+
+    delivery_status: str = Field(
+        description="Final package status such as READY_FOR_DELIVERY or BLOCKED."
+    )
+
+    readiness_score: int = Field(
+        ge=0,
+        le=100,
+        description="Final verified production readiness score."
+    )
+
+    final_notes: List[str] = Field(
+        description="Important final delivery notes, conditions, or warnings."
+    )
