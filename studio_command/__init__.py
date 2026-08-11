@@ -1,9 +1,17 @@
-from .agent import root_agent
+def __getattr__(name):
+    if name == "root_agent":
+        from .agent import root_agent
+        return root_agent
+    raise AttributeError(
+        f"module {__name__!r} has no attribute {name!r}"
+    )
+
 
 from .decisions import record_studio_head_decision
 from .models import StudioHeadDecisionRecord
 
 __all__ = [
+    "root_agent",
     "record_studio_head_decision",
     "StudioHeadDecisionRecord",
 ]
