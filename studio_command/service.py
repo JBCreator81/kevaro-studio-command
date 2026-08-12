@@ -122,3 +122,71 @@ def frontend(full_path: str):
         )
 
     return FileResponse(index)
+
+
+from pydantic import BaseModel
+
+from studio_command.graph import build_production_graph
+from studio_command.reality import apply_reality_shift
+
+
+class RealityShiftRequest(BaseModel):
+    changed_node_ids: list[str]
+    reason: str
+
+
+@app.post("/api/reality-shift")
+def reality_shift(request: RealityShiftRequest) -> dict[str, Any]:
+    snapshot = studio_snapshot()
+
+    from studio_command.models import ProductionGraphNode, ProductionGraphState
+
+    from studio_command.models import ProductionGraphNode, ProductionGraphState
+
+    graph_data = snapshot["graph"]
+
+    graph_nodes = [
+        ProductionGraphNode(
+            node_id=node["node_id"],
+            task_name=node["task_name"],
+            responsible_role=node["responsible_role"],
+            dependencies=list(node["dependencies"]),
+            dependents=list(node["dependents"]),
+            status=node["status"],
+            can_run_in_parallel_with=list(node.get("parallel_with", [])),
+            approval_required=node["approval_required"],
+            stale_reason=node.get("stale_reason"),
+        )
+        for node in graph_data["nodes"]
+    ]
+
+    graph_state = ProductionGraphState(
+        production_name=snapshot["production_name"],
+        nodes=graph_nodes,
+        ready_nodes=list(graph_data["ready_nodes"]),
+        running_nodes=list(graph_data["running_nodes"]),
+        completed_nodes=list(graph_data["completed_nodes"]),
+        blocked_nodes=list(graph_data["blocked_nodes"]),
+        stale_nodes=list(graph_data["stale_nodes"]),
+        graph_complete=graph_data["graph_complete"],
+    )
+
+    result = apply_reality_shift(
+        graph_state=graph_state,
+        changed_node_ids=request.changed_node_ids,
+        reason=request.reason,
+    )
+
+    return {
+        "status": "REALITY_SHIFT_DETECTED",
+        "reason": result.reason,
+        "changed_nodes": result.changed_nodes,
+        "stale_nodes": result.stale_nodes,
+        "preserved_nodes": result.preserved_nodes,
+        "safe_to_continue": result.preserved_nodes,
+        "human_decision_required": result.human_decision_required,
+        "message": (
+            "Production reality changed. Kevaro preserved valid work "
+            "and invalidated only the affected downstream production path."
+        ),
+    }

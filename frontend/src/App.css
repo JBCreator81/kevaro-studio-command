@@ -1242,3 +1242,573 @@ footer {
     display: none;
   }
 }
+
+/* Milestone 24 — Production Reality Engine */
+
+.reality-console {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, .85fr) minmax(420px, 1.15fr);
+  gap: 28px;
+  margin: 12px 0;
+  padding: 30px;
+  overflow: hidden;
+  border: 1px solid rgba(103, 216, 255, .11);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 88% 18%, rgba(86, 180, 255, .08), transparent 30%),
+    rgba(10, 14, 21, .92);
+}
+
+.reality-console.shift-active {
+  border-color: rgba(255, 184, 91, .2);
+  box-shadow: inset 0 0 45px rgba(255, 158, 67, .025);
+}
+
+.reality-console-copy h2 {
+  max-width: 560px;
+  margin: 9px 0 12px;
+  font-size: clamp(24px, 3vw, 38px);
+  line-height: 1.05;
+  letter-spacing: -.04em;
+  font-weight: 520;
+}
+
+.reality-console-copy > p:not(.eyebrow) {
+  max-width: 590px;
+  margin: 0;
+  color: #7e899c;
+  font-size: 12px;
+  line-height: 1.75;
+}
+
+.reality-controls {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 10px;
+}
+
+.reality-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.reality-controls label > span {
+  color: #647086;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.reality-input {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.reality-controls select,
+.reality-controls textarea {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  outline: none;
+  color: #edf4ff;
+  background: rgba(3, 7, 13, .72);
+  font: inherit;
+}
+
+.reality-controls select {
+  height: 44px;
+  padding: 0 12px;
+  font-size: 11px;
+}
+
+.reality-controls textarea {
+  min-height: 103px;
+  padding: 13px 14px;
+  resize: vertical;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.reality-controls select:focus,
+.reality-controls textarea:focus {
+  border-color: rgba(95, 200, 255, .35);
+  box-shadow: 0 0 0 3px rgba(95, 200, 255, .045);
+}
+
+.reality-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reality-primary,
+.reality-secondary {
+  min-height: 42px;
+  border-radius: 11px;
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .13em;
+}
+
+.reality-primary {
+  border: 1px solid rgba(98, 231, 190, .22);
+  color: #73efc2;
+  background:
+    linear-gradient(110deg, rgba(45, 184, 148, .13), rgba(63, 151, 255, .08));
+}
+
+.reality-secondary {
+  border: 1px solid rgba(255,255,255,.06);
+  color: #79859a;
+  background: rgba(255,255,255,.02);
+}
+
+.reality-primary:disabled {
+  cursor: wait;
+  opacity: .5;
+}
+
+.impact-intelligence {
+  grid-column: 1 / -1;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255,255,255,.055);
+}
+
+.impact-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.impact-banner div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.impact-banner small {
+  color: #ffb56d;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .18em;
+}
+
+.impact-banner strong {
+  color: #d8deea;
+  font-size: 13px;
+  font-weight: 520;
+}
+
+.impact-pulse {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #ffae63;
+  box-shadow: 0 0 20px rgba(255, 174, 99, .65);
+}
+
+.impact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+}
+
+.impact-grid article {
+  padding: 17px;
+  border: 1px solid rgba(100, 235, 190, .1);
+  border-radius: 13px;
+  background: rgba(255,255,255,.018);
+}
+
+.impact-grid article > span {
+  color: #67e6b9;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .16em;
+}
+
+.impact-grid article strong {
+  display: block;
+  margin: 7px 0 3px;
+  font-size: 24px;
+  font-weight: 520;
+}
+
+.impact-grid article p,
+.impact-lists p {
+  margin: 0;
+  color: #68748a;
+  font-size: 10px;
+}
+
+.impact-grid .impact-stale {
+  border-color: rgba(255, 170, 86, .14);
+}
+
+.impact-grid .impact-stale > span {
+  color: #ffad62;
+}
+
+.impact-grid .impact-human {
+  border-color: rgba(113, 190, 255, .13);
+}
+
+.impact-grid .impact-human > span {
+  color: #78c8ff;
+}
+
+.impact-grid .impact-human strong {
+  font-size: 15px;
+  color: #8bd7ff;
+}
+
+.impact-lists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 9px;
+}
+
+.impact-lists > div {
+  padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,.05);
+  border-radius: 11px;
+  background: rgba(0,0,0,.15);
+}
+
+.impact-lists span {
+  display: block;
+  margin-bottom: 7px;
+  color: #7a869a;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.graph-card:has(.status-pill.bad) {
+  border-color: rgba(255, 166, 89, .16);
+  background: rgba(255, 133, 72, .035);
+}
+
+@media (max-width: 900px) {
+  .reality-console {
+    grid-template-columns: 1fr;
+  }
+
+  .reality-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .reality-input {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .impact-grid,
+  .impact-lists {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Milestone 24 — Interactive Impact Intelligence */
+
+.graph-card-button,
+.parallel-card-button,
+.impact-summary {
+  font: inherit;
+  color: inherit;
+}
+
+.graph-card-button,
+.parallel-card-button {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.graph-card-button {
+  appearance: none;
+}
+
+.graph-card-button:hover,
+.parallel-card-button:hover {
+  border-color: rgba(116, 211, 255, .28);
+  transform: translateY(-1px);
+}
+
+.graph-row,
+.parallel-card {
+  transition:
+    opacity .2s ease,
+    transform .2s ease,
+    border-color .2s ease,
+    background .2s ease,
+    box-shadow .2s ease;
+}
+
+.impact-dimmed {
+  opacity: .22;
+}
+
+.graph-row.node-selected .graph-card,
+.parallel-card.node-selected {
+  border-color: rgba(109, 214, 255, .48);
+  box-shadow:
+    0 0 0 1px rgba(109, 214, 255, .12),
+    0 0 30px rgba(69, 172, 255, .08);
+}
+
+.graph-card.impact-stale,
+.parallel-card.impact-stale {
+  border-color: rgba(255, 165, 82, .26);
+  background:
+    linear-gradient(90deg, rgba(255, 132, 62, .055), rgba(255,255,255,.012));
+}
+
+.graph-card.impact-preserved,
+.parallel-card.impact-preserved {
+  border-color: rgba(84, 229, 181, .18);
+  background:
+    linear-gradient(90deg, rgba(49, 206, 157, .035), rgba(255,255,255,.01));
+}
+
+.impact-summary {
+  padding: 17px;
+  border: 1px solid rgba(100, 235, 190, .1);
+  border-radius: 13px;
+  background: rgba(255,255,255,.018);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform .18s ease,
+    border-color .18s ease,
+    background .18s ease;
+}
+
+.impact-summary:hover {
+  transform: translateY(-2px);
+  border-color: rgba(105, 222, 255, .27);
+}
+
+.impact-summary-active {
+  border-color: rgba(109, 214, 255, .44);
+  background: rgba(86, 187, 255, .065);
+  box-shadow: 0 0 24px rgba(79, 173, 255, .055);
+}
+
+.impact-summary > span {
+  color: #67e6b9;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .16em;
+}
+
+.impact-summary strong {
+  display: block;
+  margin: 7px 0 3px;
+  font-size: 24px;
+  font-weight: 520;
+}
+
+.impact-summary p {
+  margin: 0;
+  color: #68748a;
+  font-size: 10px;
+}
+
+.impact-summary.impact-stale {
+  border-color: rgba(255, 170, 86, .14);
+}
+
+.impact-summary.impact-stale > span {
+  color: #ffad62;
+}
+
+.impact-summary.impact-human > span {
+  color: #78c8ff;
+}
+
+.impact-summary.impact-human strong {
+  font-size: 15px;
+  color: #8bd7ff;
+}
+
+.node-inspector {
+  position: sticky;
+  top: 18px;
+}
+
+.inspector-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.inspector-heading h3 {
+  margin-top: 5px;
+}
+
+.inspector-empty {
+  margin: 16px 0 0;
+  color: #718096;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.inspector-body {
+  display: grid;
+  gap: 1px;
+  margin-top: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 12px;
+  background: rgba(255,255,255,.025);
+}
+
+.inspector-row,
+.inspector-action {
+  display: grid;
+  gap: 7px;
+  padding: 13px 14px;
+  background: rgba(4, 8, 14, .68);
+}
+
+.inspector-row span,
+.inspector-action span {
+  color: #667389;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+.inspector-row strong,
+.inspector-action strong {
+  color: #cfd8e8;
+  font-size: 10px;
+  line-height: 1.55;
+  font-weight: 520;
+}
+
+.inspector-action {
+  border-top: 1px solid rgba(255, 168, 82, .13);
+  background: rgba(255, 139, 64, .035);
+}
+
+.inspector-action span {
+  color: #ffad62;
+}
+
+.inspector-authority {
+  padding: 13px 14px;
+  border-top: 1px solid rgba(104, 203, 255, .13);
+  color: #86d6ff;
+  background: rgba(64, 174, 255, .035);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .13em;
+}
+
+.reality-console.shift-active + .hero-panel .readiness-card {
+  border-color: rgba(255, 168, 82, .16);
+}
+
+.reality-console.shift-active + .hero-panel .readiness-orbit {
+  opacity: .78;
+}
+
+@media (max-width: 900px) {
+  .node-inspector {
+    position: static;
+  }
+}
+
+/* Milestone 24 - Node Intelligence */
+
+.node-selected .graph-card {
+  box-shadow:
+    0 0 0 1px rgba(118, 255, 227, 0.6),
+    0 0 28px rgba(118, 255, 227, 0.12);
+}
+
+.node-intelligence-panel {
+  margin-top: 18px;
+  padding: 22px;
+  border: 1px solid rgba(118, 255, 227, 0.24);
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, rgba(16, 31, 42, 0.96), rgba(11, 20, 29, 0.94));
+}
+
+.node-intelligence-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.node-intelligence-header h2 {
+  margin: 5px 0 3px;
+}
+
+.node-intelligence-header span {
+  opacity: 0.7;
+}
+
+.node-intelligence-close {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 22px;
+}
+
+.node-intelligence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.node-intelligence-grid > div,
+.node-intelligence-explanation,
+.node-intelligence-reason {
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.node-intelligence-grid strong {
+  display: block;
+  margin-top: 5px;
+}
+
+.node-intelligence-explanation,
+.node-intelligence-reason {
+  margin-top: 12px;
+}
+
+.node-intelligence-explanation p,
+.node-intelligence-reason p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .node-intelligence-grid {
+    grid-template-columns: 1fr;
+  }
+}
