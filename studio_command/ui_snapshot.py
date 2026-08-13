@@ -30,6 +30,29 @@ def build_studio_command_snapshot(
 
     latest_history = runtime_state.decision_history[-1]
 
+    package_data = (
+        final_package.model_dump(mode="json")
+        if final_package is not None
+        else None
+    )
+
+    node_artifacts = (
+        {
+            "Production Brief": package_data["production_brief"],
+            "Research": package_data["research_packet"],
+            "Creative Development": package_data["creative_treatment"],
+            "Production Planning": package_data["production_plan"],
+            "Scheduling": package_data["production_schedule"],
+            "Asset & Media": package_data["asset_media_plan"],
+            "Clearance & Compliance": package_data["clearance_report"],
+            "Verification QA": package_data["verification_report"],
+            "Studio Head Decision": package_data["decision_history"],
+            "Final Package": package_data,
+        }
+        if package_data is not None
+        else {}
+    )
+
     return {
         "production_name": runtime_state.production_name,
         "current_stage": runtime_state.current_stage,
@@ -58,10 +81,12 @@ def build_studio_command_snapshot(
                     "parallel_with": node.can_run_in_parallel_with,
                     "approval_required": node.approval_required,
                     "stale_reason": node.stale_reason,
+                    "artifact": node_artifacts.get(node.node_id),
                 }
                 for node in graph_state.nodes
             ],
         },
+        "production_package": package_data,
         "delivery": (
             {
                 "status": final_package.delivery_status,
