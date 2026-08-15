@@ -10,6 +10,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from studio_command.exporter import complete_governed_delivery
+from studio_command.models import FinalProductionPackage
+from studio_command.persistence import ProductionPersistence
+
 SERVICE_NAME = os.getenv("K_SERVICE", "kevaro-studio-command")
 REVISION = os.getenv("K_REVISION", "local")
 STARTED_AT = time.time()
@@ -22,6 +26,8 @@ app = FastAPI(
     title="Kevaro Studio Command",
     version="23.0",
 )
+
+production_persistence = ProductionPersistence()
 
 
 def log_event(
@@ -101,6 +107,72 @@ if FRONTEND_DIST.exists():
         StaticFiles(directory=FRONTEND_DIST / "assets"),
         name="assets",
     )
+
+
+
+
+@app.post("/api/productions/{production_name}/deliver")
+def deliver_production(
+    production_name: str,
+    final_package: FinalProductionPackage,
+) -> dict[str, Any]:
+    runtime_state = production_persistence.load_runtime_state(production_name)
+
+    if runtime_state is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Governed production runtime was not found.",
+        )
+
+    if final_package.production_name != production_name:
+        raise HTTPException(
+            status_code=409,
+            detail="Final package does not belong to the requested production.",
+        )
+
+    if runtime_state.production_name != production_name:
+        raise HTTPException(
+            status_code=409,
+            detail="Persisted runtime does not belong to the requested production.",
+        )
+
+    try:
+        result = complete_governed_delivery(
+            final_package=final_package,
+            runtime_state=runtime_state,
+            persistence=production_persistence,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        log_event(
+            "Governed delivery failed",
+            severity="ERROR",
+            production_name=production_name,
+            error_type=type(exc).__name__,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Governed delivery failed before terminal state was persisted.",
+        ) from exc
+
+    log_event(
+        "Governed delivery completed",
+        production_name=production_name,
+        delivery_status=result.receipt.delivery_status,
+        current_stage=result.runtime_state.current_stage,
+    )
+
+    return {
+        "status": "DELIVERED",
+        "production_name": production_name,
+        "current_stage": result.runtime_state.current_stage,
+        "execution_authorized": result.runtime_state.execution_authorized,
+        "receipt": result.receipt.__dict__,
+    }
 
 
 @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
