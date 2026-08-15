@@ -449,6 +449,7 @@ Return a structured StudioHeadDecisionPackage.
 
 
 executive_producer_agent = Agent(
+    mode="single_turn",
     name="executive_producer",
     model="gemini-2.5-flash",
     description=(
@@ -462,6 +463,7 @@ executive_producer_agent = Agent(
 
 
 research_agent = Agent(
+    mode="single_turn",
     name="research_agent",
     model="gemini-2.5-flash",
     description=(
@@ -476,6 +478,7 @@ research_agent = Agent(
 
 
 creative_development_agent = Agent(
+    mode="single_turn",
     name="creative_development_agent",
     model="gemini-2.5-flash",
     description=(
@@ -489,6 +492,7 @@ creative_development_agent = Agent(
 
 
 production_manager_agent = Agent(
+    mode="single_turn",
     name="production_manager_agent",
     model="gemini-2.5-flash",
     description=(
@@ -502,6 +506,7 @@ production_manager_agent = Agent(
 
 
 scheduling_agent = Agent(
+    mode="single_turn",
     name="scheduling_agent",
     model="gemini-2.5-flash",
     description=(
@@ -515,6 +520,7 @@ scheduling_agent = Agent(
 
 
 asset_media_agent = Agent(
+    mode="single_turn",
     name="asset_media_agent",
     model="gemini-2.5-flash",
     description=(
@@ -528,6 +534,7 @@ asset_media_agent = Agent(
 
 
 clearance_compliance_agent = Agent(
+    mode="single_turn",
     name="clearance_compliance_agent",
     model="gemini-2.5-flash",
     description=(
@@ -541,6 +548,7 @@ clearance_compliance_agent = Agent(
 
 
 verification_qa_agent = Agent(
+    mode="single_turn",
     name="verification_qa_agent",
     model="gemini-2.5-flash",
     description=(
@@ -554,6 +562,7 @@ verification_qa_agent = Agent(
 
 
 studio_head_decision_gate = Agent(
+    mode="single_turn",
     name="studio_head_decision_gate",
     model="gemini-2.5-flash",
     description=(

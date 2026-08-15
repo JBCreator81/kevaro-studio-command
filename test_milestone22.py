@@ -141,11 +141,24 @@ graph = ProductionGraphState(
 # Here we use the validated model as the delivery object consumed by the UI contract.
 final_package = FinalProductionPackage.model_construct(
     production_name=PRODUCTION,
-    delivery_status="READY_FOR_DELIVERY",
-    readiness_score=100,
+    decision_sequence=1,
+    approval_status="APPROVED",
+    active_conditions=[],
+    production_brief={},
+    research_packet={},
+    creative_treatment={},
+    production_plan={},
+    production_schedule={},
+    asset_media_plan={},
+    clearance_report={},
+    verification_report={},
+    decision_history=[history],
+    authorized_actions=["Assemble final production package"],
     delivery_artifacts=[
         "gs://test-bucket/final/hero-video.mp4",
     ],
+    delivery_status="READY_FOR_DELIVERY",
+    readiness_score=100,
     final_notes=[
         "Final governed production package ready for delivery.",
     ],

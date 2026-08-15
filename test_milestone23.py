@@ -1,4 +1,5 @@
 import sys
+import subprocess
 from pathlib import Path
 
 import studio_command
@@ -10,7 +11,23 @@ from studio_command.service import (
 
 ROOT = Path(__file__).resolve().parent
 
-assert "studio_command.agent" not in sys.modules
+subprocess.run(
+    [
+        sys.executable,
+        "-c",
+        (
+            "import sys; "
+            "import studio_command; "
+            "from studio_command.service import app; "
+            "assert 'studio_command.agent' not in sys.modules; "
+            "assert 'root_agent' in studio_command.__all__; "
+            "assert app.title == 'Kevaro Studio Command'"
+        ),
+    ],
+    cwd=ROOT,
+    check=True,
+)
+
 assert "root_agent" in studio_command.__all__
 
 assert app.title == "Kevaro Studio Command"
