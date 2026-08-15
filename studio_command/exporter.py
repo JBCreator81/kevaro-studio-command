@@ -5,7 +5,10 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-from studio_command.models import FinalProductionPackage
+from studio_command.models import (
+    FinalProductionPackage,
+    GovernedProductionRuntimeState,
+)
 
 
 def _json_value(value: Any) -> Any:
@@ -131,4 +134,58 @@ def governed_export(
         readiness_score=final_package.readiness_score,
         manifest_sha256=digest,
         manifest_uri=manifest_uri,
+    )
+
+
+@dataclass(frozen=True)
+class GovernedDeliveryResult:
+    receipt: GovernedExportReceipt
+    runtime_state: GovernedProductionRuntimeState
+
+
+def complete_governed_delivery(
+    *,
+    final_package: FinalProductionPackage,
+    runtime_state: GovernedProductionRuntimeState,
+    persistence: Any,
+) -> GovernedDeliveryResult:
+    if runtime_state.production_name != final_package.production_name:
+        raise ValueError(
+            "Runtime state and final package must belong to the same production."
+        )
+
+    if runtime_state.corrective_cycle_active:
+        raise ValueError(
+            "Governed delivery cannot complete while a corrective cycle is active."
+        )
+
+    # Export first. If validation, hashing, or storage fails,
+    # no runtime mutation has occurred.
+    receipt = governed_export(
+        final_package=final_package,
+        persistence=persistence,
+    )
+
+    delivered_workflow_state = runtime_state.workflow_state.model_copy(
+        update={
+            "production_may_advance": False,
+            "production_stopped": False,
+            "next_stage": "DELIVERED",
+        }
+    )
+
+    delivered_runtime = runtime_state.model_copy(
+        update={
+            "workflow_state": delivered_workflow_state,
+            "execution_authorized": False,
+            "corrective_cycle_active": False,
+            "current_stage": "DELIVERED",
+        }
+    )
+
+    persistence.save_runtime_state(delivered_runtime)
+
+    return GovernedDeliveryResult(
+        receipt=receipt,
+        runtime_state=delivered_runtime,
     )

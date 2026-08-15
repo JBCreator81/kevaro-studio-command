@@ -145,3 +145,118 @@ except ValueError:
 
 
 print("GOVERNED EXPORTER CONTRACT: PASS")
+
+from studio_command.exporter import complete_governed_delivery
+from studio_command.models import (
+    GovernedProductionRuntimeState,
+    ProductionMemorySnapshot,
+    ProductionWorkflowState,
+)
+
+
+class FakeDeliveryPersistence(FakePersistence):
+    def __init__(self, fail_upload=False):
+        super().__init__()
+        self.fail_upload = fail_upload
+        self.saved_runtime = None
+
+    def upload_artifact_bytes(
+        self,
+        *,
+        production_name,
+        artifact_name,
+        data,
+        content_type,
+    ):
+        if self.fail_upload:
+            raise RuntimeError("simulated storage failure")
+        return super().upload_artifact_bytes(
+            production_name=production_name,
+            artifact_name=artifact_name,
+            data=data,
+            content_type=content_type,
+        )
+
+    def save_runtime_state(self, runtime_state):
+        self.saved_runtime = runtime_state
+
+
+workflow_state = ProductionWorkflowState.model_construct(
+    production_name=package.production_name,
+    status="APPROVED",
+    active_conditions=[],
+    corrective_action_required=False,
+    production_may_advance=True,
+    production_stopped=False,
+    next_stage="DOWNSTREAM_PRODUCTION",
+)
+
+memory_snapshot = ProductionMemorySnapshot.model_construct(
+    production_name=package.production_name,
+)
+
+runtime_state = GovernedProductionRuntimeState.model_construct(
+    production_name=package.production_name,
+    workflow_state=workflow_state,
+    decision_history=package.decision_history,
+    memory_snapshot=memory_snapshot,
+    change_impact=None,
+    impact_brief=None,
+    execution_authorized=True,
+    corrective_cycle_active=False,
+    current_stage="DOWNSTREAM_PRODUCTION",
+)
+
+delivery_persistence = FakeDeliveryPersistence()
+
+delivery_result = complete_governed_delivery(
+    final_package=package,
+    runtime_state=runtime_state,
+    persistence=delivery_persistence,
+)
+
+assert delivery_result.receipt.delivery_status == "READY_FOR_DELIVERY"
+assert delivery_result.runtime_state.current_stage == "DELIVERED"
+assert delivery_result.runtime_state.execution_authorized is False
+assert delivery_result.runtime_state.workflow_state.next_stage == "DELIVERED"
+assert delivery_result.runtime_state.workflow_state.production_may_advance is False
+
+assert delivery_persistence.saved_runtime is not None
+assert delivery_persistence.saved_runtime.current_stage == "DELIVERED"
+
+# Original runtime must remain unchanged.
+assert runtime_state.current_stage == "DOWNSTREAM_PRODUCTION"
+assert runtime_state.execution_authorized is True
+
+# Storage failure must not persist a delivered runtime.
+failed_persistence = FakeDeliveryPersistence(fail_upload=True)
+
+try:
+    complete_governed_delivery(
+        final_package=package,
+        runtime_state=runtime_state,
+        persistence=failed_persistence,
+    )
+    raise AssertionError("Storage failure must block delivery completion.")
+except RuntimeError:
+    pass
+
+assert failed_persistence.saved_runtime is None
+assert runtime_state.current_stage == "DOWNSTREAM_PRODUCTION"
+
+# Cross-production runtime/package mixing must be blocked.
+wrong_runtime = runtime_state.model_copy(
+    update={"production_name": "Different Production"}
+)
+
+try:
+    complete_governed_delivery(
+        final_package=package,
+        runtime_state=wrong_runtime,
+        persistence=FakeDeliveryPersistence(),
+    )
+    raise AssertionError("Cross-production delivery must be rejected.")
+except ValueError:
+    pass
+
+print("GOVERNED DELIVERY TRANSITION: PASS")
