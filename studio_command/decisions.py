@@ -1,6 +1,10 @@
-from typing import List
+from typing import Any, List
 
-from .models import StudioHeadDecisionPackage, StudioHeadDecisionRecord
+from .models import (
+    GovernedProductionRuntimeState,
+    StudioHeadDecisionPackage,
+    StudioHeadDecisionRecord,
+)
 
 
 ALLOWED_STUDIO_HEAD_DECISIONS = {
@@ -171,6 +175,76 @@ def build_production_decision_history_entry(
 
 from .models import CorrectiveWorkRecord
 
+
+
+def approve_governed_production(
+    *,
+    production_name: str,
+    decision: str,
+    conditions: List[str],
+    decision_notes: str,
+    decided_by: str,
+    decision_package: StudioHeadDecisionPackage,
+    unresolved_risks_acknowledged: List[str],
+    approved_artifacts: dict[str, Any],
+    preserved_artifacts: List[str],
+    persistence: Any,
+) -> GovernedProductionRuntimeState:
+    """
+    Record the initial human Studio Head decision and persist the resulting
+    governed production state.
+
+    Approved production artifacts become trusted server-side state only when
+    the human decision authorizes downstream production.
+    """
+
+    decision_record = record_studio_head_decision(
+        production_name=production_name,
+        decision=decision,
+        conditions=conditions,
+        decision_notes=decision_notes,
+        decided_by=decided_by,
+        decision_package=decision_package,
+        unresolved_risks_acknowledged=unresolved_risks_acknowledged,
+    )
+
+    workflow_state = derive_production_workflow_state(
+        decision_record
+    )
+
+    history_entry = build_production_decision_history_entry(
+        sequence=1,
+        decision_record=decision_record,
+        workflow_state=workflow_state,
+    )
+
+    runtime_state = build_governed_production_runtime_state(
+        workflow_state=workflow_state,
+        decision_history=[history_entry],
+        preserved_artifacts=preserved_artifacts,
+        stale_artifacts=[],
+    )
+
+    # Persist governance first. A rejected or corrective path must still have
+    # an authoritative runtime record.
+    persistence.save_runtime_state(runtime_state)
+
+    # Only an approved human-governed path may establish trusted artifacts.
+    if workflow_state.status in {
+        "APPROVED",
+        "APPROVED_WITH_CONDITIONS",
+    }:
+        if not approved_artifacts:
+            raise ValueError(
+                "Approved production requires a non-empty approved artifact bundle."
+            )
+
+        persistence.save_approved_artifacts(
+            production_name=production_name,
+            approved_artifacts=approved_artifacts,
+        )
+
+    return runtime_state
 
 def build_corrective_work_record(
     *,
@@ -929,3 +1003,39 @@ def build_final_production_package(
         readiness_score=verification_report.readiness_score,
         final_notes=notes,
     )
+
+def finalize_production_package(
+    *,
+    runtime_state,
+    execution_authorization,
+    production_brief,
+    research_packet,
+    creative_treatment,
+    production_plan,
+    production_schedule,
+    asset_media_plan,
+    clearance_report,
+    verification_report,
+    delivery_artifacts,
+    persistence,
+    final_notes=None,
+):
+    final_package = build_final_production_package(
+        runtime_state=runtime_state,
+        execution_authorization=execution_authorization,
+        production_brief=production_brief,
+        research_packet=research_packet,
+        creative_treatment=creative_treatment,
+        production_plan=production_plan,
+        production_schedule=production_schedule,
+        asset_media_plan=asset_media_plan,
+        clearance_report=clearance_report,
+        verification_report=verification_report,
+        delivery_artifacts=delivery_artifacts,
+        final_notes=final_notes,
+    )
+
+    persistence.save_final_package(final_package)
+
+    return final_package
+

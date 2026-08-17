@@ -11,8 +11,23 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from studio_command.exporter import complete_governed_delivery
-from studio_command.models import FinalProductionPackage
+from studio_command.decisions import (
+    build_production_execution_authorization,
+    finalize_production_package,
+)
+from studio_command.models import (
+    AssetMediaPlan,
+    ClearanceComplianceReport,
+    CreativeTreatment,
+    ProductionBrief,
+    ProductionPlan,
+    ProductionSchedule,
+    ResearchPacket,
+    VerificationQAReport,
+)
 from studio_command.persistence import ProductionPersistence
+from studio_command.decisions import approve_governed_production
+from studio_command.models import StudioHeadDecisionPackage
 
 SERVICE_NAME = os.getenv("K_SERVICE", "kevaro-studio-command")
 REVISION = os.getenv("K_REVISION", "local")
@@ -111,10 +126,269 @@ if FRONTEND_DIST.exists():
 
 
 
+
+@app.post("/api/productions/{production_name}/decision")
+def studio_head_decision(
+    production_name: str,
+    decision: str,
+    conditions: list[str] | None = None,
+    decision_notes: str = "",
+    decided_by: str = "Studio Head",
+    unresolved_risks_acknowledged: list[str] | None = None,
+) -> dict[str, Any]:
+    runtime_state = production_persistence.load_runtime_state(production_name)
+
+    if runtime_state is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="A governed runtime already exists for this production.",
+        )
+
+    decision_package_payload = production_persistence.load_pending_decision_package(
+        production_name
+    )
+
+    if decision_package_payload is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Pending Studio Head decision package was not found.",
+        )
+
+    review_bundle = production_persistence.load_pending_review_bundle(
+        production_name
+    )
+
+    if review_bundle is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Pending Studio Head review bundle was not found.",
+        )
+
+    production_brief_payload = review_bundle.get("production_brief")
+
+    if not isinstance(production_brief_payload, dict):
+        raise HTTPException(
+            status_code=409,
+            detail="Pending production brief is missing or invalid.",
+        )
+
+    delivery_artifacts = production_brief_payload.get("required_deliverables")
+
+    if not isinstance(delivery_artifacts, list) or not delivery_artifacts:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Approved production requires at least one concrete "
+                "delivery artifact."
+            ),
+        )
+
+    approved_artifacts = {
+        "production_brief": review_bundle["production_brief"],
+        "research_packet": review_bundle["research_packet"],
+        "creative_treatment": review_bundle["creative_treatment"],
+        "production_plan": review_bundle["production_plan"],
+        "production_schedule": review_bundle["production_schedule"],
+        "asset_media_plan": review_bundle["asset_media_plan"],
+        "clearance_report": review_bundle["clearance_compliance_report"],
+        "verification_report": review_bundle["verification_qa_report"],
+        "delivery_artifacts": delivery_artifacts,
+        "decision_package": decision_package_payload,
+    }
+
+    try:
+        decision_package = StudioHeadDecisionPackage.model_validate(
+            decision_package_payload
+        )
+
+        runtime_state = approve_governed_production(
+            production_name=production_name,
+            decision=decision,
+            conditions=conditions or [],
+            decision_notes=decision_notes,
+            decided_by=decided_by,
+            decision_package=decision_package,
+            unresolved_risks_acknowledged=unresolved_risks_acknowledged or [],
+            approved_artifacts=approved_artifacts,
+            preserved_artifacts=list(approved_artifacts.keys()),
+            persistence=production_persistence,
+        )
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    except Exception as exc:
+        log_event(
+            "Studio Head governed decision failed",
+            severity="ERROR",
+            production_name=production_name,
+            error_type=type(exc).__name__,
+            error_message=str(exc),
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Studio Head decision failed before governed runtime was persisted.",
+        ) from exc
+
+    return {
+        "status": runtime_state.workflow_state.status,
+        "production_name": runtime_state.production_name,
+        "current_stage": runtime_state.current_stage,
+        "execution_authorized": runtime_state.execution_authorized,
+        "active_conditions": runtime_state.workflow_state.active_conditions,
+        "decision_sequence": runtime_state.memory_snapshot.active_decision_sequence,
+    }
+
+
+@app.post("/api/productions/{production_name}/finalize")
+def finalize_production(
+    production_name: str,
+) -> dict[str, Any]:
+    runtime_state = production_persistence.load_runtime_state(
+        production_name
+    )
+
+    if runtime_state is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Governed production runtime was not found.",
+        )
+
+    approved_artifacts = production_persistence.load_approved_artifacts(
+        production_name
+    )
+
+    if approved_artifacts is None:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Governed approved production artifacts are not available "
+                "for finalization."
+            ),
+        )
+
+    required_artifacts = (
+        "production_brief",
+        "research_packet",
+        "creative_treatment",
+        "production_plan",
+        "production_schedule",
+        "asset_media_plan",
+        "clearance_report",
+        "verification_report",
+        "delivery_artifacts",
+    )
+
+    missing = [
+        name
+        for name in required_artifacts
+        if name not in approved_artifacts
+    ]
+
+    if missing:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": (
+                    "Approved production artifact bundle is incomplete."
+                ),
+                "missing_artifacts": missing,
+            },
+        )
+
+    try:
+        production_brief = ProductionBrief.model_validate(
+            approved_artifacts["production_brief"]
+        )
+        research_packet = ResearchPacket.model_validate(
+            approved_artifacts["research_packet"]
+        )
+        creative_treatment = CreativeTreatment.model_validate(
+            approved_artifacts["creative_treatment"]
+        )
+        production_plan = ProductionPlan.model_validate(
+            approved_artifacts["production_plan"]
+        )
+        production_schedule = ProductionSchedule.model_validate(
+            approved_artifacts["production_schedule"]
+        )
+        asset_media_plan = AssetMediaPlan.model_validate(
+            approved_artifacts["asset_media_plan"]
+        )
+        clearance_report = ClearanceComplianceReport.model_validate(
+            approved_artifacts["clearance_report"]
+        )
+        verification_report = VerificationQAReport.model_validate(
+            approved_artifacts["verification_report"]
+        )
+
+        delivery_artifacts = list(
+            approved_artifacts["delivery_artifacts"]
+        )
+        final_notes = list(
+            approved_artifacts.get("final_notes") or []
+        )
+
+        authorization = build_production_execution_authorization(
+            runtime_state=runtime_state,
+            requested_actions=["FINALIZE_PRODUCTION_PACKAGE"],
+        )
+
+        final_package = finalize_production_package(
+            runtime_state=runtime_state,
+            execution_authorization=authorization,
+            production_brief=production_brief,
+            research_packet=research_packet,
+            creative_treatment=creative_treatment,
+            production_plan=production_plan,
+            production_schedule=production_schedule,
+            asset_media_plan=asset_media_plan,
+            clearance_report=clearance_report,
+            verification_report=verification_report,
+            delivery_artifacts=delivery_artifacts,
+            persistence=production_persistence,
+            final_notes=final_notes,
+        )
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        log_event(
+            "Governed production finalization failed",
+            severity="ERROR",
+            production_name=production_name,
+            error_type=type(exc).__name__,
+            error_message=str(exc),
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Governed production finalization failed before "
+                "the final package was persisted."
+            ),
+        ) from exc
+
+    return {
+        "status": "READY_FOR_DELIVERY",
+        "production_name": production_name,
+        "decision_sequence": final_package.decision_sequence,
+        "approval_status": final_package.approval_status,
+        "delivery_status": final_package.delivery_status,
+        "readiness_score": final_package.readiness_score,
+        "authorized_actions": final_package.authorized_actions,
+        "delivery_artifacts": final_package.delivery_artifacts,
+    }
+
+
 @app.post("/api/productions/{production_name}/deliver")
 def deliver_production(
     production_name: str,
-    final_package: FinalProductionPackage,
 ) -> dict[str, Any]:
     runtime_state = production_persistence.load_runtime_state(production_name)
 
@@ -124,10 +398,20 @@ def deliver_production(
             detail="Governed production runtime was not found.",
         )
 
+    final_package = production_persistence.load_final_package(
+        production_name
+    )
+
+    if final_package is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Governed final production package was not found.",
+        )
+
     if final_package.production_name != production_name:
         raise HTTPException(
             status_code=409,
-            detail="Final package does not belong to the requested production.",
+            detail="Persisted final package does not belong to the requested production.",
         )
 
     if runtime_state.production_name != production_name:
@@ -153,6 +437,7 @@ def deliver_production(
             severity="ERROR",
             production_name=production_name,
             error_type=type(exc).__name__,
+            error_message=str(exc),
         )
         raise HTTPException(
             status_code=500,

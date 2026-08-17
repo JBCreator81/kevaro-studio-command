@@ -17,6 +17,7 @@ from .models import (
 )
 from .prompts import EXECUTIVE_PRODUCER_INSTRUCTION
 from .tools import search_web
+from .persistence import ProductionPersistence
 
 
 RESEARCH_AGENT_INSTRUCTION = """
@@ -593,6 +594,7 @@ legacy_root_agent = SequentialAgent(
         clearance_compliance_agent,
         verification_qa_agent,
         studio_head_decision_gate,
+        persist_pending_review,
     ],
 )
 
@@ -643,6 +645,68 @@ production_planning_merge = FunctionNode(
 )
 
 
+
+production_persistence = ProductionPersistence()
+
+_PENDING_REVIEW_KEYS = (
+    "production_brief",
+    "research_packet",
+    "creative_treatment",
+    "production_plan",
+    "production_schedule",
+    "asset_media_plan",
+    "clearance_compliance_report",
+    "verification_qa_report",
+    "studio_head_decision_package",
+)
+
+
+def _review_value(value):
+    if hasattr(value, "model_dump"):
+        return value.model_dump(mode="json")
+    return value
+
+
+def _persist_pending_review_bundle(ctx, node_input):
+    review_bundle = {}
+
+    for key in _PENDING_REVIEW_KEYS:
+        value = ctx.state.get(key)
+
+        if value is None:
+            raise ValueError(
+                f"Cannot persist Studio Head review bundle. Missing workflow state: {key}"
+            )
+
+        review_bundle[key] = _review_value(value)
+
+    decision_package = review_bundle["studio_head_decision_package"]
+    production_name = decision_package.get("production_name")
+
+    if not production_name:
+        raise ValueError(
+            "Studio Head decision package does not contain a production name."
+        )
+
+    production_persistence.save_pending_review_bundle(
+        production_name=production_name,
+        review_bundle=review_bundle,
+    )
+
+    ctx.state["pending_review_persisted"] = True
+
+    return {
+        "production_name": production_name,
+        "pending_review_persisted": True,
+    }
+
+
+persist_pending_review = FunctionNode(
+    name="persist_pending_review",
+    func=_persist_pending_review_bundle,
+)
+
+
 studio_production_workflow = Workflow(
     name="kevaro_studio_production_workflow",
     description=(
@@ -666,6 +730,7 @@ studio_production_workflow = Workflow(
             clearance_compliance_agent,
             verification_qa_agent,
             studio_head_decision_gate,
+            persist_pending_review,
         )
     ],
 )

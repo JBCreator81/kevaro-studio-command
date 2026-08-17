@@ -7,7 +7,61 @@ from typing import Any
 from google.cloud import firestore
 from google.cloud import storage
 
-from .models import GovernedProductionRuntimeState
+from .models import FinalProductionPackage, GovernedProductionRuntimeState
+from fastapi.encoders import jsonable_encoder
+
+
+_FIRESTORE_NESTED_LIST_MARKER = "_kevaro_nested_list"
+
+
+def _firestore_encode(value, *, inside_list=False):
+    """Convert JSON-safe values into Firestore-safe values.
+
+    Firestore does not permit an array to directly contain another array.
+    Nested lists are therefore wrapped in a map and restored on read.
+    """
+    if isinstance(value, dict):
+        return {
+            key: _firestore_encode(item, inside_list=False)
+            for key, item in value.items()
+        }
+
+    if isinstance(value, list):
+        encoded = [
+            _firestore_encode(item, inside_list=True)
+            for item in value
+        ]
+
+        if inside_list:
+            return {_FIRESTORE_NESTED_LIST_MARKER: encoded}
+
+        return encoded
+
+    return value
+
+
+def _firestore_decode(value):
+    """Restore Kevaro nested-list wrappers after Firestore reads."""
+    if isinstance(value, dict):
+        if (
+            set(value.keys()) == {_FIRESTORE_NESTED_LIST_MARKER}
+            and isinstance(value[_FIRESTORE_NESTED_LIST_MARKER], list)
+        ):
+            return [
+                _firestore_decode(item)
+                for item in value[_FIRESTORE_NESTED_LIST_MARKER]
+            ]
+
+        return {
+            key: _firestore_decode(item)
+            for key, item in value.items()
+        }
+
+    if isinstance(value, list):
+        return [_firestore_decode(item) for item in value]
+
+    return value
+
 
 
 DEFAULT_PROJECT_ID = "kevaro-studio-command"
@@ -62,7 +116,9 @@ class ProductionPersistence:
         self,
         runtime_state: GovernedProductionRuntimeState,
     ) -> None:
-        payload = runtime_state.model_dump(mode="json")
+        payload = _firestore_encode(
+            runtime_state.model_dump(mode="json")
+        )
 
         payload["production_name"] = runtime_state.production_name
         payload["active_decision_sequence"] = (
@@ -76,6 +132,181 @@ class ProductionPersistence:
             payload,
             merge=True,
         )
+
+    def save_final_package(
+        self,
+        final_package: FinalProductionPackage,
+    ) -> None:
+        payload = final_package.model_dump(mode="json")
+
+        firestore_safe_final_package = _firestore_encode(
+            jsonable_encoder(payload)
+        )
+
+        self._production_document(
+            final_package.production_name
+        ).set(
+            {"final_package": firestore_safe_final_package},
+            merge=True,
+        )
+
+    def load_final_package(
+        self,
+        production_name: str,
+    ) -> FinalProductionPackage | None:
+        snapshot = self._production_document(
+            production_name
+        ).get()
+
+        if not snapshot.exists:
+            return None
+
+        payload = snapshot.to_dict()
+
+        if payload is None:
+            return None
+
+        payload = _firestore_decode(payload)
+
+        final_package_payload = payload.get("final_package")
+
+        if final_package_payload is None:
+            return None
+
+        return FinalProductionPackage.model_validate(
+            final_package_payload
+        )
+
+    def save_approved_artifacts(
+        self,
+        *,
+        production_name: str,
+        approved_artifacts: dict[str, Any],
+    ) -> None:
+        if not production_name.strip():
+            raise ValueError("Production name must not be empty.")
+
+        if not approved_artifacts:
+            raise ValueError("Approved artifact bundle must not be empty.")
+
+        firestore_safe_artifacts = _firestore_encode(
+            jsonable_encoder(approved_artifacts)
+        )
+
+        self._production_document(
+            production_name
+        ).set(
+            {"approved_artifacts": firestore_safe_artifacts},
+            merge=True,
+        )
+
+    def load_approved_artifacts(
+        self,
+        production_name: str,
+    ) -> dict[str, Any] | None:
+        snapshot = self._production_document(
+            production_name
+        ).get()
+
+        if not snapshot.exists:
+            return None
+
+        payload = snapshot.to_dict()
+
+        if payload is None:
+            return None
+
+        approved_artifacts = payload.get("approved_artifacts")
+
+        if not isinstance(approved_artifacts, dict):
+            return None
+
+        return _firestore_decode(approved_artifacts)
+
+    def save_pending_review_bundle(
+        self,
+        *,
+        production_name: str,
+        review_bundle: dict[str, Any],
+    ) -> None:
+        if not production_name.strip():
+            raise ValueError("Production name must not be empty.")
+
+        if not review_bundle:
+            raise ValueError("Pending Studio Head review bundle must not be empty.")
+
+        required_keys = {
+            "production_brief",
+            "research_packet",
+            "creative_treatment",
+            "production_plan",
+            "production_schedule",
+            "asset_media_plan",
+            "clearance_compliance_report",
+            "verification_qa_report",
+            "studio_head_decision_package",
+        }
+
+        missing = sorted(required_keys - set(review_bundle))
+
+        if missing:
+            raise ValueError(
+                f"Pending Studio Head review bundle is incomplete: {missing}"
+            )
+
+        firestore_safe_review_bundle = _firestore_encode(
+            jsonable_encoder(review_bundle)
+        )
+
+        self._production_document(
+            production_name
+        ).set(
+            {"pending_review_bundle": firestore_safe_review_bundle},
+            merge=True,
+        )
+
+    def load_pending_review_bundle(
+        self,
+        production_name: str,
+    ) -> dict[str, Any] | None:
+        snapshot = self._production_document(
+            production_name
+        ).get()
+
+        if not snapshot.exists:
+            return None
+
+        payload = snapshot.to_dict()
+
+        if payload is None:
+            return None
+
+        review_bundle = payload.get("pending_review_bundle")
+
+        if not isinstance(review_bundle, dict):
+            return None
+
+        return _firestore_decode(review_bundle)
+
+    def load_pending_decision_package(
+        self,
+        production_name: str,
+    ) -> dict[str, Any] | None:
+        review_bundle = self.load_pending_review_bundle(
+            production_name
+        )
+
+        if review_bundle is None:
+            return None
+
+        pending_package = review_bundle.get(
+            "studio_head_decision_package"
+        )
+
+        if not isinstance(pending_package, dict):
+            return None
+
+        return pending_package
 
     def load_runtime_state(
         self,
@@ -91,6 +322,19 @@ class ProductionPersistence:
         payload = snapshot.to_dict()
 
         if payload is None:
+            return None
+
+        required_runtime_fields = {
+            "production_name",
+            "workflow_state",
+            "decision_history",
+            "memory_snapshot",
+            "execution_authorized",
+            "corrective_cycle_active",
+            "current_stage",
+        }
+
+        if not required_runtime_fields.issubset(payload):
             return None
 
         return GovernedProductionRuntimeState.model_validate(
