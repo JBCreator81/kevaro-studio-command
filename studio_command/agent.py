@@ -594,7 +594,6 @@ legacy_root_agent = SequentialAgent(
         clearance_compliance_agent,
         verification_qa_agent,
         studio_head_decision_gate,
-        persist_pending_review,
     ],
 )
 
