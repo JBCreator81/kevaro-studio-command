@@ -10,8 +10,23 @@ async def main():
     app = agent_engines.AdkApp(agent=root_agent)
 
     directive = (
-        "Create and prepare a 30-second luxury wellness campaign "
-        "for launch next Friday."
+        "Create and prepare a 30-second luxury wellness campaign for the fictional test brand "
+        "Aurelian Wellness, with delivery required by August 28, 2026. "
+        "The campaign promotes the fictional Aurelian Renewal Retreat, positioned as a premium "
+        "rest-and-recovery experience centred on guided relaxation, spa services, quiet private "
+        "spaces, and restorative hospitality. "
+        "Brand direction: elegant, cinematic, calm, modern luxury; warm natural textures; no hype, "
+        "no medical claims, and no promises of health outcomes. "
+        "Target audience: adults 30-55 interested in premium wellness travel and restorative experiences. "
+        "Approved production budget: CAD 12,000. "
+        "Primary platforms: Instagram Reels, YouTube Shorts, and a 16:9 web/social master. "
+        "Required deliverables: one 30-second hero commercial, one vertical 9:16 adaptation, "
+        "one 16:9 master, captions, approved music/voiceover documentation, and final production notes. "
+        "Technical delivery: 4K master where practical, 24 fps cinematic master, platform-safe versions, "
+        "caption-safe framing, and licensed or production-cleared media only. "
+        "Voiceover is approved and should be restrained, premium, and non-medical. "
+        "Use only supportable claims. Flag any remaining legal, rights, sourcing, production, or QA risk. "
+        "The Studio Head retains final approval authority. Do not invent missing facts or dates."
     )
 
     print("\n=== STUDIO HEAD DIRECTIVE ===")
