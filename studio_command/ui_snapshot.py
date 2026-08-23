@@ -14,6 +14,7 @@ def build_studio_command_snapshot(
     runtime_state: GovernedProductionRuntimeState,
     graph_state: ProductionGraphState,
     final_package: FinalProductionPackage | None = None,
+    approved_artifacts: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if graph_state.production_name != runtime_state.production_name:
         raise ValueError(
@@ -36,22 +37,34 @@ def build_studio_command_snapshot(
         else None
     )
 
-    node_artifacts = (
-        {
-            "Production Brief": package_data["production_brief"],
-            "Research": package_data["research_packet"],
-            "Creative Development": package_data["creative_treatment"],
-            "Production Planning": package_data["production_plan"],
-            "Scheduling": package_data["production_schedule"],
-            "Asset & Media": package_data["asset_media_plan"],
-            "Clearance & Compliance": package_data["clearance_report"],
-            "Verification QA": package_data["verification_report"],
-            "Studio Head Decision": package_data["decision_history"],
-            "Final Package": package_data,
-        }
-        if package_data is not None
-        else {}
-    )
+    artifact_source = approved_artifacts or {}
+
+    def artifact(key: str) -> Any:
+        if key in artifact_source:
+            return artifact_source[key]
+        if package_data is not None:
+            return package_data.get(key)
+        return None
+
+    node_artifacts = {
+        "Production Brief": artifact("production_brief"),
+        "Research": artifact("research_packet"),
+        "Creative Development": artifact("creative_treatment"),
+        "Production Planning": artifact("production_plan"),
+        "Scheduling": artifact("production_schedule"),
+        "Asset & Media": artifact("asset_media_plan"),
+        "Clearance & Compliance": artifact("clearance_report"),
+        "Verification QA": artifact("verification_report"),
+        "Studio Head Decision": (
+            artifact_source.get("decision_package")
+            or (
+                package_data.get("decision_history")
+                if package_data is not None
+                else None
+            )
+        ),
+        "Final Package": package_data,
+    }
 
     return {
         "production_name": runtime_state.production_name,

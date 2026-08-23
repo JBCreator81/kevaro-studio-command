@@ -1,502 +1,411 @@
 # Kevaro Studio Command
 
-**One Studio Head. An autonomous production crew.**
+**One Studio Head. A governed production crew of humans and agents.**
 
-Kevaro Studio Command is an AI-native production command system that turns a creative directive into researched, coordinated, created, independently verified, production-ready work using Gemini and Google Cloud.
+Kevaro Studio Command is an AI-native production command system for film, television, advertising, branded content, and creative-production teams.
 
-## Competition Build
-
-Kevaro Studio Command is a newly created project for the **2026 Agentic Cinema: The Blockbuster Hackathon**.
-
-This repository is a clean-room build. It does **not** modify, fork, copy, import, or reuse source code, schemas, components, prompts, tests, styling, or implementation from Kevaro OS RC v1.0. Only high-level lessons and general architectural principles are being carried forward.
-
-## Product Thesis
-
-Creative teams already have many tools for writing, editing, scheduling, review, assets, and delivery. Kevaro Studio Command is designed to become the **production command layer above that work**.
-
-Its purpose is not merely to store production information. Its purpose is to move productions forward.
+It turns a production directive into researched, coordinated, verified, human-governed work using Gemini, Google Agent Development Kit, Google Cloud, and Parallel.
 
 > **Not just a single source of truth. A single source of action.**
 
-A Studio Head issues a production directive. A governed network of specialized agents then researches, plans, creates, coordinates, executes, verifies, corrects, and prepares the final production package while escalating only decisions that genuinely require human judgment.
+## What Kevaro Does
 
-## Core Operating Model
+A Studio Head issues a production directive.
 
-**One human session → many coordinated agents → automatic handoffs → human decision gates only when necessary**
+Kevaro coordinates specialist agents and human production roles across:
 
-The Studio Head remains in one authenticated session. Specialist agents operate internally and never require the user to switch identities or logins.
+- production strategy
+- research and evidence
+- creative development
+- production planning
+- scheduling
+- asset and media coordination
+- rights and clearance
+- independent verification and QA
+- human approval
+- change impact
+- final delivery
 
-Planned specialist roles include:
+The governing flow is:
 
-- Executive Producer Agent
-- Research Agent
-- Creative Director Agent
-- Production Manager Agent
-- Production Scheduling Agent
-- Media & Assets Agent
-- Clearance & Compliance Agent
-- Production QA Agent
+**Evidence → Decision → Execution**
 
-Each agent has a defined responsibility, permissions, tool access, measurable completion criteria, explicit handoff rules, and auditable actions.
+Human authority remains intact while routine coordination and production work move forward autonomously where appropriate.
 
-## Governing Principles
+## Why It Exists
 
-- Evidence Before Execution
-- Graph, not chain
+Creative teams already use tools for writing, editing, scheduling, review, assets, communication, and delivery.
+
+The missing layer is often the one that answers:
+
+- What should happen next?
+- Who owns it?
+- What evidence supports the decision?
+- What changed?
+- Which work is still valid?
+- What needs human approval?
+- What can safely proceed automatically?
+- Who changed or approved something?
+- Is the production actually ready?
+
+Kevaro Studio Command is designed to become that production-command layer.
+
+## Core Principles
+
+- **Evidence Before Execution**
+- **Build a graph, not a chain**
 - Human approval only where it adds value
 - Execution agents cannot verify their own work
 - Real tool use, not simulated autonomy
-- Clear production state and measurable completion
-- Auditable actions and decisions
-- Minimal user friction
-- Premium cinematic user experience
-- Authentic film, television, advertising, and creative-production terminology
+- Explicit production state transitions
+- Persistent production memory
+- Auditability and provenance
+- Preserve unaffected work during change
+- Least-privilege work ownership
+- Role-aware guidance
+- Near-zero-training usability
+- Premium cinematic UX
+- Authentic production terminology
 - Learn continuously, change deliberately
-- New features must pass a value gate before entering the MVP
 
-## Competition Technology Direction
+## Governed Production Graph
 
-The competition build is designed around:
-
-- Gemini
-- Google Agent Development Kit (ADK)
-- Google Cloud / Gemini Enterprise Agent Platform
-- Cloud Run
-- Firestore
-- Cloud Storage
-- Parallel Search as the runtime evidence and grounding layer
-
-The submitted runtime is intended to remain within approved Google Cloud AI tooling and the selected partner technology.
-
-## Signature MVP Experiences
-
-### 1. Studio Command Center
-A premium Studio Head control surface focused on production readiness, current activity, blockers, and decisions that actually require attention.
-
-### 2. Live Agent Production Graph
-A visual, stateful production graph that shows agents planning, acting, using tools, handing work off, correcting failures, and reaching completion.
-
-### 3. Parallel Evidence Room
-A first-class evidence experience showing research questions, sources, findings, relevance, uncertainty, and the downstream production decisions influenced by that evidence.
-
-### 4. Visual Development Room
-Creative direction, mood boards, visual references, storyboard concepts, camera language, lighting, palette, and approval gates presented in a cinematic workflow.
-
-### 5. Independent Multimodal QA
-A separate QA function that evaluates work against predefined acceptance criteria and can route failed work back for correction and re-verification. Where useful, QA should evaluate text, images, audio, and video.
-
-### 6. Final Production Package
-A completed production should resolve into a professional package containing the approved creative, production plan, evidence, assets, QA results, governance record, and delivery information.
-
-## Production Intelligence Foundation
-
-The data architecture should support future capabilities from the beginning, including:
-
-- Production Memory / Production Bible
-- Change Impact Engine
-- Studio Preference Memory
-- Workflow Adaptation
-- Agent Performance Memory
-- Pattern and bottleneck detection
-- Learning from corrections
-- Versioned templates and operating rules
-- Controlled self-improvement proposals
-- Cross-production intelligence within strict privacy boundaries
-
-The system may learn from production history, but material governance, safety, permissions, and verification rules must never change silently.
-
-## Human Decision Model
-
-Studio Command classifies decisions into three categories:
-
-- **AUTO** — reversible, low-risk actions the system may execute autonomously
-- **APPROVAL REQUIRED** — material creative, delivery, budget, public-claim, or release decisions for the Studio Head
-- **EXCEPTION** — blocked or unsafe states that require escalation
-
-The goal is to protect human attention as a limited production resource.
-
-## Real Tool Action and Auditability
-
-Important operations should occur through structured tools and functions rather than unconstrained prose. Examples include:
-
-- research calls
-- production state updates
-- approval requests
-- scheduling actions
-- evidence records
-- QA results
-- retries and correction routing
-- final completion
-
-Each meaningful action should emit an auditable event describing who or what acted, which tool was used, what production node was affected, the result, and verification status.
-
-## Measurable Outcome
-
-The demo should make the system's operational value visible through metrics such as:
-
-- autonomous production tasks completed
-- evidence sources consulted
-- agent handoffs
-- human approvals required
-- QA defects detected
-- defects corrected and re-verified
-- role switches avoided
-- manual assignments avoided
-- production readiness
-
-## Example Production Directive
-
-> Create and prepare a 30-second luxury wellness campaign for launch next Friday. Produce the creative direction, research-backed concept, script, storyboard/shot plan, production schedule, supporting assets, QA review, and final production-ready package.
-
-The intended experience is that one directive starts a governed production graph and the Studio Head intervenes only at meaningful gates.
-
-## Visual Direction
-
-Kevaro Studio Command should feel like premium software built for movie, television, advertising, and media creators rather than a generic admin dashboard.
-
-The interface direction is cinematic, restrained, polished, highly visual, and production-native, with purposeful motion, large production surfaces, evidence cards, visually compelling agent activity, and a memorable **Ready for Launch / Ready for Delivery** completion experience.
-
-## Development Status
-
-Active competition build.
-
-Milestones 1-15 are complete and validated on the main branch:
+The current architecture coordinates specialist production functions including:
 
 - Executive Producer / Orchestrator
-- Research
-- Creative Development
-- Production Manager
-- Scheduling
-- Asset & Media
-- Clearance & Compliance
-- Independent Verification & QA
+- Research Agent
+- Creative Development Agent
+- Production Manager Agent
+- Scheduling Agent
+- Asset & Media Agent
+- Clearance & Compliance Agent
+- Independent Verification / QA Agent
 - Studio Head Decision Gate
-- Human Studio Head Decision Recording
-- Production Decision Routing
-- Append-Only Decision History
-- Corrective Work Cycle
-- Independent Re-Review Gate
-- Fresh Studio Head Reapproval and New Decision Sequence
 
-The build has now reached the architecture-integration phase.
+Work that can safely happen in parallel is allowed to branch.
 
-## Canonical Production Architecture
+Dependencies reconverge only where required.
 
-Kevaro Studio Command is governed by six cooperating foundations.
+The system is intentionally designed as a **production graph**, not a simple linear agent chain.
 
-### 1. Agent Production Graph
+## Human Authority
 
-Specialist agents perform production work through a dependency-aware graph.
+The Studio Head retains final authority over material production decisions.
 
-The finished runtime must preserve the principle:
+Supported decision states include:
 
-**Build a graph, not a chain.**
+- `APPROVE`
+- `APPROVE WITH CONDITIONS`
+- `REQUEST CHANGES`
+- `REJECT`
 
-Work that can safely run in parallel should branch into parallel production workstreams and reconverge only when dependencies or approval gates require it.
+Studio Head attention is treated as a limited production resource.
 
-The current sequential orchestration used during early milestone validation is a foundation, not the final operating model.
+Routine technical choices should remain with the responsible specialist when they do not materially affect:
 
-### 2. Governance & State Engine
-
-Every consequential production transition must be explicit, deterministic, and auditable.
-
-The Studio Head retains final human authority.
-
-Supported human decisions are:
-
-- APPROVE
-- APPROVE WITH CONDITIONS
-- REQUEST CHANGES
-- REJECT
-
-A request for changes must route to corrective work.
+- creative intent
+- scope
+- budget
+- schedule
+- quality threshold
+- rights or legal exposure
+- safety
+- explicit delivery requirements
 
 Corrective work must pass independent re-verification before returning to the Studio Head.
 
-A successful re-verification may never bypass a fresh Studio Head decision.
+## Parallel Evidence Room
 
-Human decisions are append-only and must never silently overwrite prior history.
+Parallel is a runtime evidence layer inside Kevaro, not a decorative integration.
 
-### 3. Production Memory
+Research surfaces are designed to expose:
 
-Kevaro must preserve the current production truth across the full production life cycle.
+- research objective
+- real sources
+- citations
+- provenance
+- relevance
+- uncertainty
+- evidence gaps
+- unresolved questions
+- evidence freshness
+- downstream decisions influenced by research
 
-Production Memory should retain relevant versions and state for:
+The goal is to make the path from **evidence to production decision** visible.
+
+## Production Memory
+
+Kevaro preserves production truth across the lifecycle.
+
+Production Memory can include:
 
 - production briefs
-- evidence and research
-- creative direction
+- research packets
+- creative treatments
 - production plans
 - schedules
-- media and assets
+- asset and media plans
 - clearance records
 - QA results
 - human decisions
 - corrective work
 - active conditions
-- approved versions
-- known-good recovery points
-- production state and history
+- approved artifacts
+- known-good recovery states
+- delivery packages
+- production history
 
-Production Memory is intended to become the persistent Production Bible for each production.
+This persistent state is intended to function as a living **Production Bible**.
 
-### 4. Change Impact Engine
+## Reality Shift
 
-Before a meaningful change propagates, Kevaro must determine what that change affects.
+Production reality changes constantly.
 
-The system should identify:
+A deadline moves. A deliverable changes. A location becomes unavailable. A budget changes. A legal issue appears.
+
+Kevaro's Reality Shift / Change Impact model determines what that change affects.
+
+It can identify:
 
 - work that remains valid
 - work that becomes stale
 - work that must reopen
 - approvals that become invalid
-- evidence that must be refreshed
-- clearance that must be rechecked
-- QA that must be rerun
-- schedule or delivery consequences
+- evidence that must refresh
+- clearance that must rerun
+- QA that must rerun
+- scheduling consequences
+- delivery consequences
 
 The governing rule is:
 
-**Do not restart unaffected work.**
+> **Do not restart unaffected work.**
 
-Only genuinely affected production nodes should be reopened or invalidated.
+Known-good work should be preserved.
 
-### 5. Command Safety & Conflict Intelligence
+## Full Node Intelligence
 
-Human authority remains final, but consequential Studio Head commands must not execute blindly.
+The Live Production Graph is not intended to be only a status visualization.
 
-Before a material command executes, Kevaro should evaluate it against:
+Each node should expose the real governed production artifact behind it.
 
-- active production state
-- existing approvals
-- dependencies
-- active work
-- evidence
-- clearance
-- QA status
-- schedule
-- delivery commitments
-- conflicting commands
-- affected productions, scenes, assets, or workstreams
+Examples include:
 
-Kevaro must detect stale, conflicting, ambiguous, high-impact, or potentially destructive instructions before execution.
+### Production Brief
+Objective, audience, deliverables, constraints, budget, deadline, assumptions, approvals.
 
-### 6. Audit & Recovery Layer
+### Research
+Parallel evidence, sources, findings, provenance, confidence, unresolved questions, decision impact.
 
-Material actions, decisions, overrides, tool use, state changes, retries, corrections, and approvals should emit an auditable record.
+### Creative Development
+Treatment, concept, tone, messaging, visual direction, references, risks, approvals.
 
-Where a high-impact action is reversible, Kevaro should preserve a known-good prior state so production can recover without unnecessary rebuilding.
+### Production Planning
+Tasks, owners, dependencies, requirements, blockers, budget implications, completion criteria.
 
-## Studio Head Authority Doctrine
+### Scheduling
+Scheduled work, dependencies, parallel groups, critical path, buffers, approval windows, deadline risks.
 
-Kevaro follows this operating principle:
+### Asset & Media
+Required assets, sourcing, licensing, formats, missing items, media risks, delivery requirements.
 
-> **Kevaro advises, protects, and explains. The Studio Head decides.**
+### Clearance & Compliance
+Rights status, clearance checks, blocked items, restrictions, unresolved questions, legal risks, next actions.
 
-The Studio Head retains final approval authority after being shown the production consequences of a material decision.
+### Verification QA
+Checks performed, failures, unresolved items, conflicts, technical validation, evidence validation, readiness score.
 
-Kevaro must never silently replace human judgment.
+### Studio Head Decision
+Recommendation, rationale, material blockers, required human decisions, conditions, authorization state, decision history.
 
-Kevaro must also never blindly execute a consequential command without explaining the likely production impact.
+### Final Package
+Approved deliverables, evidence, QA, governance record, readiness, delivery status, final production notes.
 
-Hard legal, safety, permission, platform, or system restrictions remain hard gates.
+## Production Accountability
 
-## Studio Head Impact Brief
+Important production work should identify both human and agent responsibility.
 
-Before a consequential Studio Head command or override executes, Kevaro should present a concise Studio Head Impact Brief using plain production language rather than technical system language.
+Relevant metadata can include:
 
-The Impact Brief should explain:
+- human owner
+- responsible AI agent
+- contributors
+- reviewer / verifier
+- approved by
+- last changed by
+- timestamp
+- status
+- action history
+- decision history
 
-- what changed
-- what production work is affected
-- what remains valid
-- what becomes stale or must be redone
-- schedule impact
-- delivery impact
-- budget or resource impact when known
-- clearance or rights impact
-- continuity impact
-- QA impact
-- affected downstream work
-- recommended production path
-- consequences of proceeding anyway
+The purpose is professional accountability and collaboration, not opaque employee surveillance.
 
-The Studio Head should receive meaningful options such as:
+## Work Ownership & Access Control
 
-- Approve Recommended Path
-- Approve With Conditions
-- Proceed Anyway
-- Send Back for Changes
-- Cancel Command
+Kevaro follows a simple production rule:
 
-When an informed override is allowed, Kevaro should record what was warned about, what recommendation was overridden, who approved the override, and which production risks were knowingly accepted.
+> **Read what you need. Edit what you own. Approve only what your role permits. Studio Head governs everything.**
 
-## Command Safeguards
+### Studio Head
+Full production-wide visibility and governance.
 
-The unified runtime should include:
+### Assigned Owner
+May edit owned work within workflow rules.
 
-### Stale Decision Protection
+### Contributor
+May edit only specifically assigned sections or deliverables.
 
-If evidence, QA, clearance, or production state changes after a Studio Head decision package was prepared, the package becomes stale and must refresh before approval can execute.
+### Reviewer / Verifier
+May review, comment, verify, approve, or return work where authorized, but should not silently rewrite creator work.
 
-### Scope Protection
+### Downstream Worker
+May read approved dependencies required for their work without modifying upstream artifacts.
 
-Ambiguous commands such as "change everything", "delete the old version", or "use this everywhere" must resolve their exact production scope before destructive execution.
+### Unassigned Crew
+Limited or no edit access.
 
-### Conflict Detection
+Changes to completed or approved work owned by someone else should move through governed change control / Reality Shift.
 
-Contradictory instructions, conflicts with approved direction, active work, dependencies, clearance, schedule, or other commands must be surfaced before execution.
+## Role-Aware Guidance
 
-### Impact Classification
+Kevaro should reduce the need for formal software training.
 
-Low-impact reversible actions may proceed normally.
+A user entering a production should be able to understand:
 
-Consequential actions require an Impact Brief.
+- their role
+- their assigned work
+- what is waiting on them
+- what they can edit
+- what they can only view
+- what context they should review
+- what evidence or files are missing
+- what action they should take next
+- what happens after completion
+- when something must be escalated
 
-High-impact or irreversible actions require deliberate human confirmation.
+Guidance depth may include:
 
-### Selective Invalidation
+- Guided
+- Standard
+- Expert
 
-A change to one part of production must not automatically invalidate the entire production.
+A long-term product metric is:
 
-Only directly or transitively affected nodes should reopen.
+**Time-to-Productive-Work**
 
-### Known-Good Recovery
+The goal is for a newly invited employee, contractor, freelancer, or temporary crew member to begin the correct work within minutes.
 
-Important reversible changes should preserve the previous valid production state for safe rollback.
+## Production Accountability Chain
 
-## Canonical Production Flow
+**Crew Identity → Work Ownership → Scoped Access → Role-Aware Guidance → Node Intelligence → Evidence → Verification → Human Approval → Audit Trail → Final Delivery**
 
-The intended end-to-end production flow is:
+Reality Shift overlays this chain by determining which existing work remains trustworthy when production conditions change.
 
-Studio Head Directive
-→ Executive Producer
-→ Evidence & Research
-→ Creative Development
-→ Production Planning
-→ Stateful Production Graph
-→ Scheduling / Assets / Clearance / parallel production work
-→ Independent QA
-→ Studio Head Decision Package
-→ Human Studio Head Decision
-→ Deterministic State Transition
-→ Append-Only Decision History
-→ Approved Execution OR Corrective Cycle
-→ Change Impact Analysis where required
-→ Selective Rework
-→ Independent Re-Verification
-→ Fresh Studio Head Reapproval
-→ Final Production Execution
-→ Final Production Package
-→ Ready for Delivery
+## Independent Verification
 
-## Remaining Build Roadmap
+Execution and verification remain separated.
 
-### Milestone 16 — Unified Governed Production Runtime
+Kevaro's QA model is designed to:
 
-Connect:
+- evaluate artifacts against defined criteria
+- identify defects and contradictions
+- check cross-artifact consistency
+- validate technical requirements
+- validate evidence where applicable
+- route failed work back for correction
+- independently re-check corrected work
 
-- Agent Production Graph
-- Governance & State Engine
-- Production Memory
-- Change Impact Engine
-- Command Safety & Conflict Intelligence
-- Audit & Recovery
+An executing agent should not certify its own work.
 
-A production should be able to move through human decision, preserve state and history, respond intelligently to changes, reopen only affected work, and resume from the correct state.
+## Final Production Package
 
-### Milestone 17 — Approved Production Execution
-
-Real downstream production actions may execute only from properly authorized workflow states.
-
-Conditional approvals must carry active conditions into execution.
-
-Rejected and change-requested paths must remain blocked.
-
-### Milestone 18 — Persistent Production Memory & Recovery
-
-Persist production state, artifacts, versions, history, known-good snapshots, and recovery data using the competition runtime infrastructure.
-
-### Milestone 19 — True Live Production Graph & Change Propagation
-
-Evolve the validated sequential foundation into the intended stateful production graph with:
-
-- parallel workstreams
-- dependency-aware routing
-- reconvergence
-- selective invalidation
-- live node state
-- change propagation
-- recovery-aware resumption
-
-### Milestone 20 — Studio Command Center & Signature Experiences
-
-Deliver the premium production-native interface including:
-
-- Studio Command Center
-- Live Agent Production Graph
-- Parallel Evidence Room
-- Visual Development
-- Independent Multimodal QA
-- Studio Head Impact Brief
-- production memory and change-impact visibility
-
-### Milestone 21 — Final Production Package & Delivery Runtime
-
-Resolve approved production work into a professional final package containing:
+A completed production should resolve into a professional governed package containing relevant:
 
 - approved creative
 - production plan
+- schedule
 - evidence
-- media and assets
+- assets
+- clearance state
 - QA results
-- governance history
-- decision history
-- clearance records
+- human decision record
+- production history
 - delivery information
-- production readiness
+- readiness state
 
-### Milestone 22 — Competition Hardening & Deployment
+The final experience is designed around a clear:
 
-Complete:
+**READY FOR DELIVERY**
 
-- Google Cloud deployment
-- failure and retry handling
-- runtime proof
-- judge-visible tool evidence
-- measurable production outcomes
-- demo production
-- screenshots
-- submission video
-- competition documentation
-- final Devpost readiness
+state.
 
-## Winning Standard
+## Current Proven Capabilities
 
-Kevaro Studio Command is being built to compete for first place.
+The project has already demonstrated:
 
-The product should also demonstrate enough operational value, technical depth, production realism, and product maturity that a studio, agency, technology partner, or investor could reasonably want to continue the conversation after seeing the demo.
+- live Gemini runtime
+- Google ADK orchestration
+- Parallel Search runtime
+- governed multi-agent production workflow
+- parallel production branches
+- Studio Head decision gate
+- authority calibration
+- independent QA
+- clearance and compliance flow
+- human decision persistence
+- approved-artifact persistence
+- governed runtime persistence
+- final package generation
+- `READY_FOR_DELIVERY`
+- certified lifecycle readiness score of 100 in controlled testing
+- Reality Shift preservation and stale-work propagation
+- frontend rendering of production state
+- Live Production Graph
+- Human Authority Gate
+- Node Intelligence backend artifact contract
+- production frontend build
 
-The governing product standard is:
+## Current Development Focus
 
-> **Build to win the competition. Build it well enough that winning is not the only valuable outcome.**
+The next implementation priorities are:
 
-The final demo should prove that Kevaro can:
+1. Complete canonical production identity across persistence and production-specific routes.
+2. Finish Full Node Intelligence using real persisted artifacts.
+3. Implement Crew Identity and production accountability metadata.
+4. Implement backend-enforced Work Ownership and Access Control.
+5. Implement Role-Aware Guidance and Next Best Action.
+6. Make Parallel evidence fully visible across judge-facing surfaces.
+7. Complete premium cinematic opening and interface polish.
+8. Run a fresh current-schema production from directive through final package.
+9. Simplify demo startup and runtime reliability.
+10. Deploy the final public Google Cloud application.
+11. Complete competition documentation, screenshots, runtime proof, demo video, and Devpost submission.
 
-- execute a governed production from one Studio Head directive
-- use real evidence and tools
-- coordinate specialist agents
-- preserve human authority
-- detect production conflicts
-- explain consequences in plain studio language
-- protect unaffected work during revisions
-- route only impacted work for correction
-- independently re-verify corrections
-- preserve decision and production history
-- resume from the correct production state
-- surface measurable operational value
-- finish with a memorable Ready for Delivery experience
+## Technology
 
-## License
+Current technology direction includes:
 
-Licensed under the Apache License 2.0. See `LICENSE`.
+- Gemini
+- Google Agent Development Kit
+- Google Cloud
+- Vertex AI
+- FastAPI
+- Firestore
+- Cloud Storage
+- Parallel Search
+- React
+- Vite
+
+The hackathon runtime is intentionally kept inside the approved Google AI / Google Cloud stack plus the selected Parallel partner integration.
+
+## Repository Structure
+
+```text
+kevaro-studio-command/
+├── studio_command/        # governed backend, agents, state, persistence, API
+├── frontend/              # React production command interface
+├── docs/                  # canonical contract and project documentation
+├── tests/                 # validation and lifecycle tests
+├── README.md
+└── LICENSE
+

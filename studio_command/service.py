@@ -177,6 +177,7 @@ def live_studio_snapshot(
         runtime_state=runtime_state,
         graph_state=graph_state,
         final_package=final_package,
+        approved_artifacts=approved_artifacts,
     )
 
 
