@@ -247,6 +247,87 @@ Anonymous or inconsistent production identity is not acceptable in the finished 
 10. Deploy to final public Google Cloud URL.
 11. Complete README, architecture proof, screenshots, demo video, compliance evidence, and Devpost submission.
 
+## Final Locked Completion Scope
+The following requirements are additive to all earlier canonical requirements and define the final completion scope before submission. They must not be interpreted to weaken, replace, or rewrite earlier governance.
+
+### Production Asset Ingress & External Tool Handoff
+- Users must be able to upload production work into the relevant production, node, or task.
+- Supported production assets should include video, audio, images, scripts, documents, storyboards, graphics, and related media.
+- Every asset must preserve production identity, node/task association, human owner, AI agent where applicable, version, timestamp, status, review state, and provenance.
+- Earlier versions must never be silently replaced. Version history must be preserved.
+- Uploaded work must flow into the appropriate review, QA, clearance, approval, and final-delivery lifecycle.
+- Kevaro Studio Command is the production command and governance layer, not a replacement for professional editing applications such as Premiere Pro, DaVinci Resolve, After Effects, Photoshop, Canva, Frame.io, or similar specialist tools.
+- External tools may receive governed assignments and return finished or revised assets into Kevaro.
+- External handoff must preserve the brief, requirements, evidence, owner, due date, approvals, and expected deliverable.
+- Returned work must reconcile against the correct production and version before QA or approval.
+- Future connectors may support Google Drive, Cloud Storage, Frame.io, Adobe workflows, Dropbox, DAM systems, review platforms, calendars, and similar production services.
+- Lightweight in-Kevaro review is in scope: preview/playback, version comparison, comments, annotations or timecoded feedback where practical, and approve/request changes.
+- Full NLE/editor functionality is out of scope.
+
+Product principle:
+**Create where the work is best created. Govern it where the production is best governed.**
+
+Canonical flow:
+**Assignment → Guidance → Creation in Kevaro or External Tool → Upload/Handoff → Version Control → Evidence → QA → Review → Human Approval → Final Delivery**
+
+### Competition Runtime Proof / Certification
+- Parallel must be visibly proven at runtime, with grounding metadata and source citations exposed in the judge-facing experience.
+- Gemini/Google ADK runtime must be visibly verifiable as the orchestration and intelligence layer.
+- Production Asset Ingress must work in the live submitted product, not only exist in documentation.
+- Deployed secrets, including the Parallel API key, must use Google Secret Manager or equivalent approved Google Cloud secret handling.
+- The final hosted judge path must be reliable and repeatable.
+- Final certification must use the exact deployed, current-schema product.
+
+### Final Locked Remaining Product Work
+- canonical production identity
+- full live Node Intelligence, including pre-approval/pending-review usability
+- Crew Identity and accountability
+- work ownership and backend-enforced scoped access
+- Role-Aware Guidance / Next Best Action
+- Parallel Evidence visibility and citations
+- Production Asset Ingress
+- External Tool Handoff
+- asset versioning and lightweight review
+- Google Secret Manager integration
+- premium cinematic UI polish, including a strong intro and production graph/nodes visibly coming to life
+- fresh end-to-end governed production certification
+- public Google Cloud deployment
+- README/run-instruction finalization
+- public repository and licence verification
+- Parallel partner-track selection
+- completed Devpost form
+- 3-minute demo video showing the real working product
+- final screenshots, runtime evidence, and submission packaging
+
+### Scope Freeze
+After this lock, no new voluntary product features may be added before submission.
+
+Only the following may enter scope:
+- bug fixes
+- competition-compliance fixes
+- reliability or security fixes
+- implementation work required to make an already-locked requirement function correctly
+
+### Codex Completion Rule
+Codex is the primary implementation engine for the remaining repository-level engineering work. Work must proceed in bounded milestones.
+
+For every milestone, Codex must:
+- inspect the canonical contract first
+- preserve existing architecture and governance unless the locked requirement genuinely requires a change
+- avoid unrelated refactors
+- report files changed
+- report assumptions
+- run appropriate tests and build validation
+- report exact validation results
+- report unresolved risks or blockers
+- stop for review before starting the next milestone
+- never silently broaden scope
+
+ChatGPT/Prime remains the orchestration and review layer for architecture, competition compliance, prioritization, judge strategy, and milestone acceptance.
+
+### Completion Sequence
+**Product completion → end-to-end certification → public deployment → evidence/package validation → 3-minute demo → Devpost submission**
+
 ## Change Rule
 Future core requirements must be added here and implemented without weakening existing governed behaviour.
 
