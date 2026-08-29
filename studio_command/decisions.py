@@ -1,5 +1,7 @@
 from typing import Any, List
 
+from .identity import require_production_identity
+
 from .models import (
     GovernedProductionRuntimeState,
     StudioHeadDecisionPackage,
@@ -197,6 +199,11 @@ def approve_governed_production(
     Approved production artifacts become trusted server-side state only when
     the human decision authorizes downstream production.
     """
+
+    production_name = require_production_identity(
+        production_name,
+        decision_package.production_name,
+    )
 
     decision_record = record_studio_head_decision(
         production_name=production_name,

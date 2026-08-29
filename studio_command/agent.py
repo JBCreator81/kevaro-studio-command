@@ -17,6 +17,7 @@ from .models import (
 )
 from .prompts import EXECUTIVE_PRODUCER_INSTRUCTION
 from .tools import search_web
+from .identity import require_production_identity
 from .persistence import ProductionPersistence
 
 
@@ -739,6 +740,12 @@ def _persist_pending_review_bundle(ctx, node_input):
         raise ValueError(
             "Studio Head decision package does not contain a production name."
         )
+
+    production_name = require_production_identity(
+        production_name,
+        review_bundle["production_plan"]["production_name"],
+        review_bundle["production_schedule"]["production_name"],
+    )
 
     production_persistence.save_pending_review_bundle(
         production_name=production_name,

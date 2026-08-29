@@ -28,6 +28,7 @@ from studio_command.models import (
 from studio_command.persistence import ProductionPersistence
 from studio_command.decisions import approve_governed_production
 from studio_command.models import StudioHeadDecisionPackage
+from studio_command.identity import canonical_production_name
 
 SERVICE_NAME = os.getenv("K_SERVICE", "kevaro-studio-command")
 REVISION = os.getenv("K_REVISION", "local")
@@ -120,23 +121,54 @@ def studio_snapshot() -> Any:
 def live_studio_snapshot(
     production_name: str,
 ) -> Any:
-    """Build Studio Command UI state from the governed production source of truth."""
+    """Build UI state from pending review or the governed runtime."""
     from studio_command.graph import build_production_graph
-    from studio_command.models import ProductionPlan, ProductionSchedule
-    from studio_command.ui_snapshot import build_studio_command_snapshot
-
-    runtime_state = production_persistence.load_runtime_state(
-        production_name
+    from studio_command.ui_snapshot import (
+        build_pending_studio_command_snapshot,
+        build_studio_command_snapshot,
     )
 
+    canonical_name = canonical_production_name(production_name)
+    runtime_state = production_persistence.load_runtime_state(canonical_name)
+
     if runtime_state is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Governed production runtime was not found.",
-        )
+        try:
+            review_bundle = production_persistence.load_pending_review_bundle(
+                canonical_name
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+        if review_bundle is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Production was not found.",
+            )
+
+        try:
+            production_plan = ProductionPlan.model_validate(
+                review_bundle["production_plan"]
+            )
+            production_schedule = ProductionSchedule.model_validate(
+                review_bundle["production_schedule"]
+            )
+            graph_state = build_production_graph(
+                production_plan=production_plan,
+                production_schedule=production_schedule,
+            )
+            return build_pending_studio_command_snapshot(
+                production_name=canonical_name,
+                graph_state=graph_state,
+                review_bundle=review_bundle,
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise HTTPException(
+                status_code=409,
+                detail="Pending production state is invalid for Studio Command.",
+            ) from exc
 
     approved_artifacts = production_persistence.load_approved_artifacts(
-        production_name
+        canonical_name
     )
 
     if approved_artifacts is None:
@@ -168,10 +200,7 @@ def live_studio_snapshot(
         production_plan=production_plan,
         production_schedule=production_schedule,
     )
-
-    final_package = production_persistence.load_final_package(
-        production_name
-    )
+    final_package = production_persistence.load_final_package(canonical_name)
 
     return build_studio_command_snapshot(
         runtime_state=runtime_state,

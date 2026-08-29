@@ -7,6 +7,7 @@ from typing import Any
 from google.cloud import firestore
 from google.cloud import storage
 
+from .identity import canonical_production_name, require_production_identity
 from .models import FinalProductionPackage, GovernedProductionRuntimeState
 from fastapi.encoders import jsonable_encoder
 
@@ -76,6 +77,15 @@ class ProductionPersistenceConfig:
     productions_collection: str = DEFAULT_PRODUCTIONS_COLLECTION
 
 
+def _runtime_identity(runtime_state: GovernedProductionRuntimeState) -> str:
+    return require_production_identity(
+        runtime_state.production_name,
+        runtime_state.workflow_state.production_name,
+        runtime_state.memory_snapshot.production_name,
+        *(entry.production_name for entry in runtime_state.decision_history),
+    )
+
+
 class ProductionPersistence:
     def __init__(
         self,
@@ -95,12 +105,7 @@ class ProductionPersistence:
         )
 
     def _production_document(self, production_name: str):
-        normalized_name = production_name.strip()
-
-        if not normalized_name:
-            raise ValueError(
-                "Production name must not be empty."
-            )
+        normalized_name = canonical_production_name(production_name)
 
         document_id = sha256(
             normalized_name.encode("utf-8")
@@ -116,11 +121,12 @@ class ProductionPersistence:
         self,
         runtime_state: GovernedProductionRuntimeState,
     ) -> None:
+        canonical_name = _runtime_identity(runtime_state)
         payload = _firestore_encode(
             runtime_state.model_dump(mode="json")
         )
 
-        payload["production_name"] = runtime_state.production_name
+        payload["production_name"] = canonical_name
         payload["active_decision_sequence"] = (
             runtime_state.memory_snapshot.active_decision_sequence
         )
@@ -229,9 +235,6 @@ class ProductionPersistence:
         production_name: str,
         review_bundle: dict[str, Any],
     ) -> None:
-        if not production_name.strip():
-            raise ValueError("Production name must not be empty.")
-
         if not review_bundle:
             raise ValueError("Pending Studio Head review bundle must not be empty.")
 
@@ -254,14 +257,29 @@ class ProductionPersistence:
                 f"Pending Studio Head review bundle is incomplete: {missing}"
             )
 
+        try:
+            canonical_name = require_production_identity(
+                production_name,
+                review_bundle["production_plan"]["production_name"],
+                review_bundle["production_schedule"]["production_name"],
+                review_bundle["studio_head_decision_package"]["production_name"],
+            )
+        except (KeyError, TypeError) as exc:
+            raise ValueError(
+                "Pending Studio Head review bundle has invalid production identity."
+            ) from exc
+
         firestore_safe_review_bundle = _firestore_encode(
             jsonable_encoder(review_bundle)
         )
 
         self._production_document(
-            production_name
+            canonical_name
         ).set(
-            {"pending_review_bundle": firestore_safe_review_bundle},
+            {
+                "production_name": canonical_name,
+                "pending_review_bundle": firestore_safe_review_bundle,
+            },
             merge=True,
         )
 
@@ -286,7 +304,24 @@ class ProductionPersistence:
         if not isinstance(review_bundle, dict):
             return None
 
-        return _firestore_decode(review_bundle)
+        review_bundle = _firestore_decode(review_bundle)
+        persisted_name = payload.get("production_name")
+
+        try:
+            identity_names = [
+                review_bundle["production_plan"]["production_name"],
+                review_bundle["production_schedule"]["production_name"],
+                review_bundle["studio_head_decision_package"]["production_name"],
+            ]
+            if persisted_name is not None:
+                identity_names.append(persisted_name)
+            require_production_identity(production_name, *identity_names)
+        except (KeyError, TypeError) as exc:
+            raise ValueError(
+                "Pending Studio Head review bundle has invalid production identity."
+            ) from exc
+
+        return review_bundle
 
     def load_pending_decision_package(
         self,
@@ -337,9 +372,14 @@ class ProductionPersistence:
         if not required_runtime_fields.issubset(payload):
             return None
 
-        return GovernedProductionRuntimeState.model_validate(
+        runtime_state = GovernedProductionRuntimeState.model_validate(
             payload
         )
+        require_production_identity(
+            production_name,
+            _runtime_identity(runtime_state),
+        )
+        return runtime_state
 
     def save_known_good_snapshot(
         self,
