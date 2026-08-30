@@ -49,6 +49,7 @@ from studio_command.persistence import ProductionPersistence
 from studio_command.decisions import approve_governed_production
 from studio_command.models import StudioHeadDecisionPackage
 from studio_command.identity import canonical_production_name
+from studio_command.runtime_config import SecretConfigurationError, load_runtime_config
 
 SERVICE_NAME = os.getenv("K_SERVICE", "kevaro-studio-command")
 REVISION = os.getenv("K_REVISION", "local")
@@ -175,7 +176,16 @@ async def require_trusted_public_actor(
     if not _is_protected_public_mutation(request):
         return await call_next(request)
 
-    expected_token = os.getenv("KEVARO_INTERNAL_AUTH_TOKEN", "")
+    config = getattr(request.app.state, "runtime_config", None)
+    if config is None:
+        try:
+            config = load_runtime_config()
+        except SecretConfigurationError:
+            return _boundary_denial(
+                503, "DEPLOYED_SECRET_CONFIGURATION_UNAVAILABLE",
+                "Protected mutations are disabled because deployed secret configuration is unavailable.",
+            )
+    expected_token = config.internal_auth_token or ""
     if not expected_token:
         return _boundary_denial(
             422,
@@ -194,20 +204,17 @@ async def require_trusted_public_actor(
             "A valid trusted server actor context is required.",
         )
 
-    configured_name = os.getenv("KEVARO_STUDIO_HEAD_NAME", "Studio Head")
+    configured_name = config.studio_head_name
     claimed_name = (
         request.query_params.get("decided_by")
         or request.query_params.get("actor_name")
     )
     claimed_role = request.query_params.get("actor_role")
-    studio_head_only = request.url.path == "/api/reality-shift" or (
-        request.url.path.endswith(PROTECTED_MUTATION_SUFFIXES)
-    )
-    if studio_head_only and (
-        claimed_name and claimed_name != configured_name
-    ) or (
-        studio_head_only and claimed_role
-        and claimed_role.casefold() != "studio head"
+    claimed_type = request.query_params.get("actor_type")
+    if (
+        (claimed_name and claimed_name != configured_name)
+        or (claimed_role and claimed_role.casefold() != "studio head")
+        or (claimed_type and claimed_type.casefold() != "human")
     ):
         return _boundary_denial(
             403,
@@ -303,20 +310,33 @@ def log_event(
 
 @app.on_event("startup")
 async def startup_event() -> None:
+    try:
+        app.state.runtime_config = load_runtime_config()
+    except SecretConfigurationError as exc:
+        log_event(
+            "Kevaro deployed secret configuration failed",
+            severity="CRITICAL", error_type=type(exc).__name__,
+        )
+        raise RuntimeError(
+            "Kevaro cannot start without required deployed secret configuration."
+        ) from exc
     log_event(
         "Kevaro Studio Command service started",
         frontend_available=FRONTEND_DIST.exists(),
         snapshot_available=SNAPSHOT_PATH.exists(),
+        runtime_configuration=app.state.runtime_config.public_status(),
     )
 
 
 @app.get("/health")
 def health() -> dict[str, Any]:
+    config = getattr(app.state, "runtime_config", None) or load_runtime_config()
     return {
         "status": "ok",
         "service": SERVICE_NAME,
         "revision": REVISION,
         "uptime_seconds": round(time.time() - STARTED_AT, 2),
+        "runtime_configuration": config.public_status(),
     }
 
 

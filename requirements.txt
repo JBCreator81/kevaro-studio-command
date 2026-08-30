@@ -4,5 +4,6 @@ pydantic
 parallel-web
 google-cloud-firestore
 google-cloud-storage
+google-cloud-secret-manager
 fastapi
 uvicorn[standard]

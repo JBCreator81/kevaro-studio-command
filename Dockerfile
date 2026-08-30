@@ -25,4 +25,4 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "uvicorn studio_command.service:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["python", "-m", "studio_command"]

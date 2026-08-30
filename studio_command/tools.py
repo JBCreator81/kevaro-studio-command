@@ -1,20 +1,24 @@
-import os
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 from parallel import Parallel
+from studio_command.runtime_config import RuntimeConfig, load_runtime_config
 
 
 def _model_dict(value) -> dict:
     return value.model_dump(mode="json") if hasattr(value, "model_dump") else {}
 
 
-def search_web(objective: str, search_queries: list[str]) -> dict:
+def search_web(
+    objective: str, search_queries: list[str], *,
+    runtime_config: RuntimeConfig | None = None,
+) -> dict:
     """
     Search the live web with Parallel and return compact,
     source-grounded evidence for the Research Agent.
     """
 
-    if not os.getenv("PARALLEL_API_KEY"):
+    config = runtime_config or load_runtime_config()
+    if not config.parallel_api_key:
         return {
             "status": "error",
             "message": "PARALLEL_API_KEY is not configured.",
@@ -28,7 +32,7 @@ def search_web(objective: str, search_queries: list[str]) -> dict:
         }
 
     invoked_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
+    client = Parallel(api_key=config.parallel_api_key)
 
     response = client.search(
         objective=objective,
