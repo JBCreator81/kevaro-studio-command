@@ -8,7 +8,11 @@ from google.cloud import firestore
 from google.cloud import storage
 
 from .identity import canonical_production_name, require_production_identity
-from .models import FinalProductionPackage, GovernedProductionRuntimeState
+from .models import (
+    FinalProductionPackage,
+    GovernedProductionRuntimeState,
+    ProductionAssetRegistry,
+)
 from fastapi.encoders import jsonable_encoder
 
 
@@ -482,6 +486,60 @@ class ProductionPersistence:
             content_type=content_type,
         )
 
+        return f"gs://{self.config.bucket_name}/{object_name}"
+
+    def save_asset_registry(self, registry: ProductionAssetRegistry) -> None:
+        canonical_name = require_production_identity(registry.production_identity)
+        payload = _firestore_encode(
+            jsonable_encoder(registry.model_dump(mode="json"))
+        )
+        self._production_document(canonical_name).set(
+            {"production_asset_registry": payload}, merge=True,
+        )
+
+    def load_asset_registry(
+        self, production_name: str,
+    ) -> ProductionAssetRegistry | None:
+        snapshot = self._production_document(production_name).get()
+        if not snapshot.exists:
+            return None
+        payload = snapshot.to_dict() or {}
+        raw = payload.get("production_asset_registry")
+        if not isinstance(raw, dict):
+            return None
+        registry = ProductionAssetRegistry.model_validate(
+            _firestore_decode(raw)
+        )
+        require_production_identity(
+            production_name, registry.production_identity,
+        )
+        return registry
+
+    def upload_production_asset_bytes(
+        self,
+        *,
+        production_name: str,
+        asset_id: str,
+        version_number: int,
+        filename: str,
+        data: bytes,
+        content_type: str = "application/octet-stream",
+    ) -> str:
+        """Upload to a server-derived object key, never a client path."""
+        canonical_name = require_production_identity(production_name)
+        if not asset_id.startswith("asset-") or not asset_id[6:].isalnum():
+            raise ValueError("Asset ID is not valid for storage.")
+        if version_number < 1:
+            raise ValueError("Asset version must be positive.")
+        from .assets import safe_filename
+        safe_name = safe_filename(filename)
+        production_key = sha256(canonical_name.encode("utf-8")).hexdigest()
+        object_name = (
+            f"productions/{production_key}/production-assets/{asset_id}/"
+            f"v{version_number}/{safe_name}"
+        )
+        blob = self.storage_client.bucket(self.config.bucket_name).blob(object_name)
+        blob.upload_from_string(data, content_type=content_type)
         return f"gs://{self.config.bucket_name}/{object_name}"
 
     def production_exists(

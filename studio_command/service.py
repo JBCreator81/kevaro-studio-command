@@ -1,18 +1,34 @@
 from __future__ import annotations
 
 import hmac
+import base64
+import hashlib
 import json
 import os
 import time
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
 from studio_command.access import AuthorizationDenied, require_access
 from studio_command.accountability import human_actor
+from studio_command.accountability import ai_actor
+from studio_command.assets import (
+    approved_asset_references,
+    asset_snapshot,
+    create_asset_version,
+    handoff_asset,
+    latest_asset,
+    reconcile_external_return,
+    register_asset,
+    review_asset,
+    submit_asset_for_review,
+)
 from studio_command.exporter import complete_governed_delivery
 from studio_command.decisions import (
     build_production_execution_authorization,
@@ -27,6 +43,7 @@ from studio_command.models import (
     ProductionSchedule,
     ResearchPacket,
     VerificationQAReport,
+    AssetStorageReference,
 )
 from studio_command.persistence import ProductionPersistence
 from studio_command.decisions import approve_governed_production
@@ -49,6 +66,73 @@ app = FastAPI(
 production_persistence = ProductionPersistence()
 
 PROTECTED_MUTATION_SUFFIXES = ("/decision", "/finalize", "/deliver")
+ALLOWED_ASSET_CONTENT_TYPES = {
+    "application/msword",
+    "application/pdf",
+    "application/rtf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.oasis.opendocument.text",
+    "text/markdown",
+    "text/plain",
+}
+ALLOWED_ASSET_CONTENT_PREFIXES = ("audio/", "image/", "video/")
+
+
+class AssetRegistrationRequest(BaseModel):
+    node_id: str
+    task_id: str | None = None
+    asset_category: str
+    filename: str
+    display_name: str
+    media_document_type: str
+    storage: AssetStorageReference | None = None
+    content_base64: str | None = None
+    content_type: str = "application/octet-stream"
+    external_source_tool: str | None = None
+    provenance: dict[str, Any] = Field(default_factory=dict)
+    expected_deliverable: str | None = None
+    acceptance_criteria: list[str] = Field(default_factory=list)
+    preview_metadata: dict[str, Any] = Field(default_factory=dict)
+    clearance_state: str | None = None
+
+
+class AssetVersionRequest(BaseModel):
+    filename: str
+    storage: AssetStorageReference | None = None
+    content_base64: str | None = None
+    content_type: str = "application/octet-stream"
+    external_source_tool: str | None = None
+    provenance: dict[str, Any] = Field(default_factory=dict)
+    preview_metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AssetHandoffRequest(BaseModel):
+    target_tool: str
+    brief: str
+    requirements: list[str] = Field(default_factory=list)
+    evidence_context: list[str] = Field(default_factory=list)
+    due_date: str | None = None
+    approval_context: str | None = None
+    expected_deliverable: str
+
+
+class AssetReturnRequest(BaseModel):
+    handoff_id: str
+    base_version_id: str
+    node_id: str
+    filename: str
+    storage: AssetStorageReference | None = None
+    content_base64: str | None = None
+    content_type: str = "application/octet-stream"
+    return_metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AssetReviewRequest(BaseModel):
+    version_id: str
+    decision: str
+    notes: str | None = None
+    annotations: list[dict[str, Any]] = Field(default_factory=list)
+    comparison_version_id: str | None = None
 
 
 def _is_protected_public_mutation(request: Request) -> bool:
@@ -57,7 +141,10 @@ def _is_protected_public_mutation(request: Request) -> bool:
     path = request.url.path
     return path == "/api/reality-shift" or (
         path.startswith("/api/productions/")
-        and path.endswith(PROTECTED_MUTATION_SUFFIXES)
+        and (
+            path.endswith(PROTECTED_MUTATION_SUFFIXES)
+            or "/assets" in path
+        )
     )
 
 
@@ -113,10 +200,14 @@ async def require_trusted_public_actor(
         or request.query_params.get("actor_name")
     )
     claimed_role = request.query_params.get("actor_role")
-    if (
+    studio_head_only = request.url.path == "/api/reality-shift" or (
+        request.url.path.endswith(PROTECTED_MUTATION_SUFFIXES)
+    )
+    if studio_head_only and (
         claimed_name and claimed_name != configured_name
     ) or (
-        claimed_role and claimed_role.casefold() != "studio head"
+        studio_head_only and claimed_role
+        and claimed_role.casefold() != "studio head"
     ):
         return _boundary_denial(
             403,
@@ -125,6 +216,69 @@ async def require_trusted_public_actor(
         )
 
     return await call_next(request)
+
+
+def _asset_actor(name: str, role: str, actor_type: str):
+    if actor_type.strip().upper() == "AI_AGENT":
+        return ai_actor(name, role)
+    if actor_type.strip().upper() != "HUMAN":
+        raise HTTPException(status_code=422, detail="actor_type must be HUMAN or AI_AGENT.")
+    return human_actor(name, role)
+
+
+def _load_asset_graph(production_name: str):
+    from studio_command.graph import build_production_graph
+    bundle = production_persistence.load_pending_review_bundle(production_name)
+    if bundle is None:
+        bundle = production_persistence.load_approved_artifacts(production_name)
+    if bundle is None:
+        raise HTTPException(status_code=404, detail="Production was not found.")
+    try:
+        return build_production_graph(
+            production_plan=ProductionPlan.model_validate(bundle["production_plan"]),
+            production_schedule=ProductionSchedule.model_validate(bundle["production_schedule"]),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail="Production graph is invalid.") from exc
+
+
+def _asset_node(production_name: str, node_id: str):
+    graph = _load_asset_graph(production_name)
+    node = next((item for item in graph.nodes if item.node_id == node_id), None)
+    if node is None:
+        raise HTTPException(status_code=409, detail="Asset node does not belong to production.")
+    return node
+
+
+def _decode_asset_content(content: str | None) -> bytes | None:
+    if content is None:
+        return None
+    try:
+        data = base64.b64decode(content, validate=True)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=422, detail="Asset content_base64 is invalid.") from exc
+    maximum = int(os.getenv("KEVARO_MAX_ASSET_UPLOAD_BYTES", str(100 * 1024 * 1024)))
+    if len(data) > maximum:
+        raise HTTPException(status_code=413, detail="Asset upload exceeds the configured limit.")
+    return data
+
+
+def _validated_asset_content_type(content_type: str) -> str:
+    normalized = content_type.strip().casefold()
+    if normalized == "image/svg+xml" or not (
+        normalized in ALLOWED_ASSET_CONTENT_TYPES
+        or normalized.startswith(ALLOWED_ASSET_CONTENT_PREFIXES)
+    ):
+        raise HTTPException(
+            status_code=415, detail="Asset content type is not supported."
+        )
+    return normalized
+
+
+def _asset_error(exc: Exception) -> HTTPException:
+    if isinstance(exc, AuthorizationDenied):
+        return HTTPException(status_code=403, detail=exc.as_detail())
+    return HTTPException(status_code=409, detail=str(exc))
 
 
 def log_event(
@@ -215,6 +369,8 @@ def live_studio_snapshot(
     canonical_name = canonical_production_name(production_name)
     actor = human_actor(actor_name, actor_role)
     runtime_state = production_persistence.load_runtime_state(canonical_name)
+    load_registry = getattr(production_persistence, "load_asset_registry", None)
+    asset_registry = load_registry(canonical_name) if load_registry else None
 
     if runtime_state is None:
         try:
@@ -247,6 +403,7 @@ def live_studio_snapshot(
                 review_bundle=review_bundle,
                 actor=actor,
                 guidance_level=guidance_level,
+                asset_registry=asset_registry,
             )
         except (KeyError, TypeError, ValueError) as exc:
             raise HTTPException(
@@ -296,7 +453,227 @@ def live_studio_snapshot(
         approved_artifacts=approved_artifacts,
         actor=actor,
         guidance_level=guidance_level,
+        asset_registry=asset_registry,
     )
+
+
+@app.get("/api/productions/{production_name}/assets")
+def list_production_assets(production_name: str) -> dict[str, Any]:
+    canonical_name = canonical_production_name(production_name)
+    if not production_persistence.production_exists(canonical_name):
+        raise HTTPException(status_code=404, detail="Production was not found.")
+    return asset_snapshot(production_persistence.load_asset_registry(canonical_name))
+
+
+def _resolved_storage(
+    *, production_name: str, asset_id: str, version_number: int,
+    filename: str, storage: AssetStorageReference | None,
+    content_base64: str | None, content_type: str,
+) -> AssetStorageReference:
+    data = _decode_asset_content(content_base64)
+    if (storage is None) == (data is None):
+        raise HTTPException(
+            status_code=422,
+            detail="Provide exactly one of storage or content_base64.",
+        )
+    if storage is not None:
+        return storage
+    content_type = _validated_asset_content_type(content_type)
+    uri = production_persistence.upload_production_asset_bytes(
+        production_name=production_name, asset_id=asset_id,
+        version_number=version_number, filename=filename, data=data,
+        content_type=content_type,
+    )
+    return AssetStorageReference(
+        location_type="GCS_URI", reference=uri, content_type=content_type,
+        size_bytes=len(data), checksum_sha256=hashlib.sha256(data).hexdigest(),
+    )
+
+
+@app.post("/api/productions/{production_name}/assets/register")
+def register_production_asset(
+    production_name: str, request: AssetRegistrationRequest,
+    actor_name: str = "Studio Head", actor_role: str = "Studio Head",
+    actor_type: str = "HUMAN",
+) -> dict[str, Any]:
+    canonical_name = canonical_production_name(production_name)
+    node = _asset_node(canonical_name, request.node_id)
+    actor = _asset_actor(actor_name, actor_role, actor_type)
+    asset_id = f"asset-{uuid4().hex}"
+    try:
+        require_access(
+            actor=actor, action="EDIT", accountability=node.accountability,
+            scope=request.task_id, status=node.status,
+        )
+        storage = _resolved_storage(
+            production_name=canonical_name, asset_id=asset_id, version_number=1,
+            filename=request.filename, storage=request.storage,
+            content_base64=request.content_base64, content_type=request.content_type,
+        )
+        asset = register_asset(
+            persistence=production_persistence, production_name=canonical_name,
+            node_id=node.node_id, task_id=request.task_id, actor=actor,
+            node_accountability=node.accountability,
+            asset_category=request.asset_category, filename=request.filename,
+            display_name=request.display_name,
+            media_document_type=request.media_document_type, storage=storage,
+            external_source_tool=request.external_source_tool,
+            provenance=request.provenance,
+            expected_deliverable=request.expected_deliverable,
+            acceptance_criteria=request.acceptance_criteria,
+            preview_metadata=request.preview_metadata,
+            clearance_state=request.clearance_state, asset_id=asset_id,
+        )
+        return asset.model_dump(mode="json")
+    except (ValueError, AuthorizationDenied) as exc:
+        raise _asset_error(exc) from exc
+
+
+@app.post("/api/productions/{production_name}/assets/{asset_id}/versions")
+def create_production_asset_version(
+    production_name: str, asset_id: str, request: AssetVersionRequest,
+    actor_name: str = "Studio Head", actor_role: str = "Studio Head",
+    actor_type: str = "HUMAN",
+) -> dict[str, Any]:
+    canonical_name = canonical_production_name(production_name)
+    actor = _asset_actor(actor_name, actor_role, actor_type)
+    try:
+        registry = production_persistence.load_asset_registry(canonical_name)
+        versions = [item for item in registry.assets if item.asset_id == asset_id]
+        if not versions:
+            raise ValueError("Production asset was not found.")
+        prior = latest_asset(registry, asset_id)
+        require_access(
+            actor=actor, action="EDIT", accountability=prior.accountability,
+            status=prior.status,
+        )
+        next_version = max(item.version_number for item in versions) + 1
+        storage = _resolved_storage(
+            production_name=canonical_name, asset_id=asset_id,
+            version_number=next_version, filename=request.filename,
+            storage=request.storage, content_base64=request.content_base64,
+            content_type=request.content_type,
+        )
+        asset = create_asset_version(
+            persistence=production_persistence, production_name=canonical_name,
+            asset_id=asset_id, actor=actor, storage=storage,
+            filename=request.filename, provenance=request.provenance,
+            external_source_tool=request.external_source_tool,
+            preview_metadata=request.preview_metadata,
+        )
+        return asset.model_dump(mode="json")
+    except (AttributeError, ValueError, AuthorizationDenied) as exc:
+        raise _asset_error(exc) from exc
+
+
+@app.post("/api/productions/{production_name}/assets/{asset_id}/submit-review")
+def submit_production_asset_review(
+    production_name: str, asset_id: str, version_id: str,
+    actor_name: str = "Studio Head", actor_role: str = "Studio Head",
+    actor_type: str = "HUMAN",
+) -> dict[str, Any]:
+    try:
+        asset = submit_asset_for_review(
+            persistence=production_persistence,
+            production_name=canonical_production_name(production_name),
+            asset_id=asset_id, version_id=version_id,
+            actor=_asset_actor(actor_name, actor_role, actor_type),
+        )
+        return asset.model_dump(mode="json")
+    except (ValueError, AuthorizationDenied) as exc:
+        raise _asset_error(exc) from exc
+
+
+@app.post("/api/productions/{production_name}/assets/{asset_id}/handoff")
+def handoff_production_asset(
+    production_name: str, asset_id: str, request: AssetHandoffRequest,
+    actor_name: str = "Studio Head", actor_role: str = "Studio Head",
+    actor_type: str = "HUMAN",
+) -> dict[str, Any]:
+    try:
+        handoff = handoff_asset(
+            persistence=production_persistence,
+            production_name=canonical_production_name(production_name),
+            asset_id=asset_id, actor=_asset_actor(actor_name, actor_role, actor_type),
+            target_tool=request.target_tool, brief=request.brief,
+            requirements=request.requirements, evidence_context=request.evidence_context,
+            due_date=request.due_date, approval_context=request.approval_context,
+            expected_deliverable=request.expected_deliverable,
+        )
+        return handoff.model_dump(mode="json")
+    except (ValueError, AuthorizationDenied) as exc:
+        raise _asset_error(exc) from exc
+
+
+@app.post("/api/productions/{production_name}/assets/{asset_id}/return")
+def return_production_asset(
+    production_name: str, asset_id: str, request: AssetReturnRequest,
+    actor_name: str = "Studio Head", actor_role: str = "Studio Head",
+    actor_type: str = "HUMAN",
+) -> dict[str, Any]:
+    canonical_name = canonical_production_name(production_name)
+    actor = _asset_actor(actor_name, actor_role, actor_type)
+    try:
+        registry = production_persistence.load_asset_registry(canonical_name)
+        versions = [item for item in registry.assets if item.asset_id == asset_id]
+        if not versions:
+            raise ValueError("Production asset was not found.")
+        base = latest_asset(registry, asset_id)
+        require_access(
+            actor=actor, action="EDIT", accountability=base.accountability,
+            status=base.status,
+        )
+        if base.production_identity != canonical_name or base.node_id != request.node_id:
+            raise ValueError("External return does not match its production and node.")
+        open_handoff = next(
+            (item for item in base.handoffs if item.handoff_id == request.handoff_id),
+            None,
+        )
+        if (
+            open_handoff is None
+            or open_handoff.status != "WAITING_FOR_RETURN"
+            or open_handoff.base_version_id != request.base_version_id
+            or base.version_id != request.base_version_id
+        ):
+            raise ValueError("External return does not match the current open handoff.")
+        next_version = max(item.version_number for item in versions) + 1
+        storage = _resolved_storage(
+            production_name=canonical_name, asset_id=asset_id,
+            version_number=next_version, filename=request.filename,
+            storage=request.storage, content_base64=request.content_base64,
+            content_type=request.content_type,
+        )
+        asset = reconcile_external_return(
+            persistence=production_persistence, production_name=canonical_name,
+            asset_id=asset_id, handoff_id=request.handoff_id,
+            base_version_id=request.base_version_id, node_id=request.node_id,
+            actor=actor, storage=storage, filename=request.filename,
+            return_metadata=request.return_metadata,
+        )
+        return asset.model_dump(mode="json")
+    except (AttributeError, ValueError, AuthorizationDenied) as exc:
+        raise _asset_error(exc) from exc
+
+
+@app.post("/api/productions/{production_name}/assets/{asset_id}/review")
+def review_production_asset(
+    production_name: str, asset_id: str, request: AssetReviewRequest,
+    actor_name: str = "Studio Head", actor_role: str = "Studio Head",
+    actor_type: str = "HUMAN",
+) -> dict[str, Any]:
+    try:
+        asset = review_asset(
+            persistence=production_persistence,
+            production_name=canonical_production_name(production_name),
+            asset_id=asset_id, version_id=request.version_id,
+            actor=_asset_actor(actor_name, actor_role, actor_type),
+            decision=request.decision, notes=request.notes,
+            annotations=request.annotations,
+            comparison_version_id=request.comparison_version_id,
+        )
+        return asset.model_dump(mode="json")
+    except (ValueError, AuthorizationDenied) as exc:
+        raise _asset_error(exc) from exc
 
 
 if FRONTEND_DIST.exists():
@@ -551,6 +928,9 @@ def finalize_production(
             delivery_artifacts=delivery_artifacts,
             persistence=production_persistence,
             final_notes=final_notes,
+            production_assets=approved_asset_references(
+                production_persistence.load_asset_registry(production_name)
+            ) if hasattr(production_persistence, "load_asset_registry") else [],
         )
 
     except ValueError as exc:

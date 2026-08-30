@@ -86,6 +86,7 @@ def build_governed_export_manifest(
         "delivery": {
             "status": final_package.delivery_status,
             "artifacts": list(final_package.delivery_artifacts),
+            "production_assets": list(final_package.production_assets),
             "final_notes": list(final_package.final_notes),
         },
         "production_package": final_package.model_dump(mode="json"),

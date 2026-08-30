@@ -10,6 +10,7 @@ from .guidance import (
     production_guidance_summary,
 )
 from .identity import require_production_identity
+from .assets import asset_snapshot
 from .models import (
     AccountabilityActor,
     FinalProductionPackage,
@@ -215,6 +216,7 @@ def build_pending_studio_command_snapshot(
     review_bundle: dict[str, Any],
     actor: AccountabilityActor = STUDIO_HEAD,
     guidance_level: str = "Standard",
+    asset_registry=None,
 ) -> dict[str, Any]:
     guidance_level = normalize_guidance_level(guidance_level)
     canonical_name = require_production_identity(
@@ -231,6 +233,21 @@ def build_pending_studio_command_snapshot(
         graph_state, node_intelligence, actor, guidance_level,
         "STUDIO_HEAD_REVIEW",
     )
+    asset_media = node_intelligence.get("Asset & Media")
+    required_assets = [
+        item.get("asset_name") for item in asset_media.get("asset_requirements", [])
+        if isinstance(item, dict) and item.get("asset_name")
+    ] if isinstance(asset_media, dict) else []
+    production_assets = asset_snapshot(asset_registry, required_assets)
+    if isinstance(asset_media, dict):
+        node_intelligence["Asset & Media"] = {
+            **asset_media, "production_assets": production_assets,
+        }
+    for node in graph_snapshot["nodes"]:
+        node["production_assets"] = [
+            item for item in production_assets["assets"]
+            if item["node_id"] == node["node_id"]
+        ]
 
     return {
         "production_name": canonical_name,
@@ -255,6 +272,12 @@ def build_pending_studio_command_snapshot(
         "delivery": None,
         "guidance_level": guidance_level,
         "guidance": graph_snapshot["guidance_summary"],
+        "production_assets": production_assets,
+        "asset_guidance": {
+            "missing_required_asset": production_assets["missing_deliverables"],
+            "next_best_action": production_assets["next_required_asset_action"],
+            "actions": production_assets["asset_actions"],
+        },
     }
 
 
@@ -266,6 +289,7 @@ def build_studio_command_snapshot(
     approved_artifacts: dict[str, Any] | None = None,
     actor: AccountabilityActor = STUDIO_HEAD,
     guidance_level: str = "Standard",
+    asset_registry=None,
 ) -> dict[str, Any]:
     guidance_level = normalize_guidance_level(guidance_level)
     require_production_identity(
@@ -291,6 +315,21 @@ def build_studio_command_snapshot(
         graph_state, node_intelligence, actor, guidance_level,
         runtime_state.current_stage,
     )
+    asset_media = node_intelligence.get("Asset & Media")
+    required_assets = [
+        item.get("asset_name") for item in asset_media.get("asset_requirements", [])
+        if isinstance(item, dict) and item.get("asset_name")
+    ] if isinstance(asset_media, dict) else []
+    production_assets = asset_snapshot(asset_registry, required_assets)
+    if isinstance(asset_media, dict):
+        node_intelligence["Asset & Media"] = {
+            **asset_media, "production_assets": production_assets,
+        }
+    for node in graph_snapshot["nodes"]:
+        node["production_assets"] = [
+            item for item in production_assets["assets"]
+            if item["node_id"] == node["node_id"]
+        ]
 
     return {
         "production_name": runtime_state.production_name,
@@ -324,4 +363,10 @@ def build_studio_command_snapshot(
         ),
         "guidance_level": guidance_level,
         "guidance": graph_snapshot["guidance_summary"],
+        "production_assets": production_assets,
+        "asset_guidance": {
+            "missing_required_asset": production_assets["missing_deliverables"],
+            "next_best_action": production_assets["next_required_asset_action"],
+            "actions": production_assets["asset_actions"],
+        },
     }

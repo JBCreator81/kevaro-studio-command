@@ -914,6 +914,7 @@ def build_final_production_package(
     verification_report: VerificationQAReport,
     delivery_artifacts: list[str],
     final_notes: list[str] | None = None,
+    production_assets: list[dict] | None = None,
 ) -> FinalProductionPackage:
     """Assemble the final governed package only from an authorized production state."""
 
@@ -1019,6 +1020,7 @@ def build_final_production_package(
         decision_history=runtime_state.decision_history,
         authorized_actions=execution_authorization.authorized_actions,
         delivery_artifacts=delivery_artifacts,
+        production_assets=production_assets or [],
         delivery_status=delivery_status,
         readiness_score=verification_report.readiness_score,
         final_notes=notes,
@@ -1044,6 +1046,7 @@ def finalize_production_package(
     delivery_artifacts,
     persistence,
     final_notes=None,
+    production_assets=None,
 ):
     final_package = build_final_production_package(
         runtime_state=runtime_state,
@@ -1058,9 +1061,9 @@ def finalize_production_package(
         verification_report=verification_report,
         delivery_artifacts=delivery_artifacts,
         final_notes=final_notes,
+        production_assets=production_assets,
     )
 
     persistence.save_final_package(final_package)
 
     return final_package
-

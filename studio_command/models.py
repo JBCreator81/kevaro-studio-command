@@ -45,6 +45,96 @@ class AccountableArtifact(BaseModel):
     )
 
 
+AssetCategory = Literal[
+    "VIDEO", "AUDIO", "IMAGE", "SCRIPT_DOCUMENT", "STORYBOARD",
+    "GRAPHIC", "OTHER_PRODUCTION_FILE",
+]
+
+
+class AssetStorageReference(BaseModel):
+    """Secret-safe governed location; never a local or arbitrary filesystem path."""
+
+    location_type: Literal["GCS_URI", "EXTERNAL_REFERENCE", "REGISTERED_URI"]
+    reference: str
+    provider: str | None = None
+    content_type: str | None = None
+    size_bytes: int | None = Field(default=None, ge=0)
+    checksum_sha256: str | None = None
+
+
+class AssetComment(BaseModel):
+    comment_id: str
+    author: AccountabilityActor
+    body: str
+    created_at: datetime
+    annotation: Dict[str, Any] = Field(default_factory=dict)
+
+
+class AssetReviewRecord(BaseModel):
+    reviewer: AccountabilityActor
+    decision: Literal["COMMENT", "REQUEST_CHANGES", "APPROVE"]
+    timestamp: datetime
+    notes: str | None = None
+    annotations: List[Dict[str, Any]] = Field(default_factory=list)
+    comparison_version_id: str | None = None
+
+
+class AssetHandoff(BaseModel):
+    handoff_id: str
+    target_tool: str
+    brief: str
+    requirements: List[str] = Field(default_factory=list)
+    evidence_context: List[str] = Field(default_factory=list)
+    owner: AccountabilityActor
+    due_date: str | None = None
+    approval_context: str | None = None
+    expected_deliverable: str
+    handed_off_by: AccountabilityActor
+    handed_off_at: datetime
+    status: Literal["WAITING_FOR_RETURN", "RETURNED", "CANCELLED"]
+    base_version_id: str
+    returned_version_id: str | None = None
+    returned_at: datetime | None = None
+    return_metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ProductionAsset(AccountableArtifact):
+    """One immutable content revision plus mutable governed workflow metadata."""
+
+    asset_id: str
+    version_id: str
+    production_identity: str
+    node_id: str
+    task_id: str | None = None
+    asset_category: AssetCategory
+    filename: str
+    display_name: str
+    media_document_type: str
+    storage: AssetStorageReference
+    external_source_tool: str | None = None
+    version_number: int = Field(ge=1)
+    parent_version_id: str | None = None
+    created_at: datetime
+    last_changed_at: datetime
+    status: str = "REGISTERED"
+    review_state: Literal[
+        "NOT_SUBMITTED", "PENDING_REVIEW", "CHANGES_REQUESTED", "APPROVED"
+    ] = "NOT_SUBMITTED"
+    clearance_state: str | None = None
+    provenance: Dict[str, Any] = Field(default_factory=dict)
+    expected_deliverable: str | None = None
+    acceptance_criteria: List[str] = Field(default_factory=list)
+    preview_metadata: Dict[str, Any] = Field(default_factory=dict)
+    comments: List[AssetComment] = Field(default_factory=list)
+    reviews: List[AssetReviewRecord] = Field(default_factory=list)
+    handoffs: List[AssetHandoff] = Field(default_factory=list)
+
+
+class ProductionAssetRegistry(BaseModel):
+    production_identity: str
+    assets: List[ProductionAsset] = Field(default_factory=list)
+
+
 GuidanceLevel = Literal["Guided", "Standard", "Expert"]
 
 
@@ -1274,6 +1364,14 @@ class FinalProductionPackage(AccountableArtifact):
 
     delivery_artifacts: List[str] = Field(
         description="Final deliverable artifact references included in the package."
+    )
+
+    production_assets: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description=(
+            "Approved latest production-asset references included in delivery. "
+            "Empty for packages created before production asset ingress."
+        ),
     )
 
     delivery_status: str = Field(
