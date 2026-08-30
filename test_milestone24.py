@@ -3,6 +3,10 @@ import tempfile
 from pathlib import Path
 
 import studio_command.service as service
+from starlette.requests import Request
+from studio_command.auth import SESSION_COOKIE, issue_session
+from studio_command.models import CrewMember, CrewProductionAssignment
+from studio_command.runtime_config import RuntimeConfig
 from studio_command.service import RealityShiftRequest, reality_shift
 
 
@@ -152,11 +156,22 @@ service.SNAPSHOT_PATH.write_text(
 )
 
 
+_secret = "milestone-24-session-secret-at-least-32-bytes"
+_member = CrewMember(user_id="head", auth_subject="head-subject", display_name="Studio Head", organization_id="kevaro", assignments=[CrewProductionAssignment(production_name="Luxury Wellness Campaign", roles=["Producer"], studio_head=True)])
+class _CrewStore:
+    def load_crew_member(self, subject):
+        return _member if subject == "head-subject" else None
+service.production_persistence = _CrewStore()
+service.app.state.runtime_config = RuntimeConfig("local", "test", "local-environment", session_signing_secret=_secret)
+_token = issue_session("head-subject", _secret)
+_request = Request({"type": "http", "method": "POST", "path": "/api/reality-shift", "headers": [(b"cookie", f"{SESSION_COOKIE}={_token}".encode())], "app": service.app})
+
 result = reality_shift(
     RealityShiftRequest(
         changed_node_ids=["Scheduling"],
         reason="Launch moved from Friday to Wednesday.",
-    )
+    ),
+    _request,
 )
 
 assert result["status"] == "REALITY_SHIFT_DETECTED"

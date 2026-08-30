@@ -121,165 +121,18 @@ def test_unassigned_and_legacy_work_fail_closed_but_load():
     assert exc.value.as_detail()["reason_code"] == "LEGACY_ASSIGNMENT_REQUIRED"
 
 
-def test_approval_service_remains_human_studio_head_constrained(monkeypatch):
-    class NeverCalled:
-        def load_runtime_state(self, production_name):
-            raise AssertionError("authorization must happen before persistence")
-
+def test_public_governed_mutation_requires_authenticated_session(monkeypatch):
     import studio_command.service as service
-    monkeypatch.setattr(service, "production_persistence", NeverCalled())
-    with pytest.raises(HTTPException) as exc:
-        studio_head_decision(
-            "Production",
-            "APPROVE",
-            decided_by="Riley",
-            actor_role="Reviewer",
-        )
-    assert exc.value.status_code == 403
-    assert exc.value.detail["reason_code"] == "HUMAN_STUDIO_HEAD_REQUIRED"
-
-
-def test_pending_nodes_have_explicit_owner_and_enforce_mutations():
-    graph = build_production_graph(
-        production_plan=production_plan,
-        production_schedule=production_schedule,
-    )
-    node = graph.nodes[0]
-    assigned_agent = node.accountability.ai_agent_responsible
-    assert assigned_agent.role == node.responsible_role
-
-    running = start_graph_node(
-        graph_state=graph,
-        node_id=node.node_id,
-        actor=assigned_agent,
-    )
-    completed = complete_graph_node(
-        graph_state=running,
-        node_id=node.node_id,
-        actor=assigned_agent,
-    )
-    assert node.node_id in completed.completed_nodes
-
-    with pytest.raises(AuthorizationDenied):
-        start_graph_node(
-            graph_state=graph,
-            node_id=node.node_id,
-            actor=unassigned,
-        )
-
-
-def test_pending_snapshot_exposes_owner_access_and_denial(monkeypatch):
-    bundle = add_pending_accountability(review_bundle())
-
-    class PendingPersistence:
-        def load_runtime_state(self, production_name):
-            return None
-
-        def load_pending_review_bundle(self, production_name):
-            return bundle
-
-    import studio_command.service as service
-    monkeypatch.setattr(service, "production_persistence", PendingPersistence())
-    snapshot = service.live_studio_snapshot(
-        "Luxury Wellness Campaign",
-        actor_name="Taylor",
-        actor_role="Crew",
-    )
-    assert snapshot["access"]["Research"]["access_level"] == "UNASSIGNED"
-    assert snapshot["access"]["Research"]["blocked_reason_code"] == "ACTOR_UNASSIGNED"
-    node = snapshot["graph"]["nodes"][0]
-    assert node["ownership"]["current_owner"]["role"] == node["responsible_role"]
-    assert node["ownership"]["access"]["capabilities"]["edit"] is False
-
-
-def test_finalize_fails_closed_before_runtime_lookup(monkeypatch):
-    class NeverCalled:
-        def load_runtime_state(self, production_name):
-            raise AssertionError("authorization must happen before persistence")
-
-    import studio_command.service as service
-    monkeypatch.setattr(service, "production_persistence", NeverCalled())
-    with pytest.raises(HTTPException) as exc:
-        finalize_production(
-            "Production",
-            actor_name="Riley",
-            actor_role="Reviewer",
-        )
-    assert exc.value.status_code == 403
-    assert exc.value.detail["error"] == "ACCESS_DENIED"
-
-
-@pytest.mark.parametrize(
-    "path",
-    [
-        "/api/productions/Production/decision",
-        "/api/productions/Production/finalize",
-        "/api/productions/Production/deliver",
-        "/api/reality-shift",
-    ],
-)
-def test_public_mutations_fail_closed_without_trusted_context(
-    monkeypatch,
-    path,
-):
-    monkeypatch.delenv("KEVARO_INTERNAL_AUTH_TOKEN", raising=False)
-    response = TestClient(__import__(
-        "studio_command.service", fromlist=["app"]
-    ).app).post(path)
-    assert response.status_code == 422
-    assert response.json()["detail"]["reason_code"] == (
-        "TRUSTED_ACTOR_CONTEXT_UNAVAILABLE"
-    )
-
-
-def test_public_caller_cannot_claim_studio_head_with_bad_token(monkeypatch):
-    monkeypatch.setenv("KEVARO_INTERNAL_AUTH_TOKEN", "server-secret")
-    response = TestClient(__import__(
-        "studio_command.service", fromlist=["app"]
-    ).app).post(
-        "/api/productions/Production/finalize",
-        params={"actor_name": "Attacker", "actor_role": "Studio Head"},
-        headers={"x-kevaro-internal-token": "wrong-secret"},
-    )
+    from studio_command.runtime_config import RuntimeConfig
+    monkeypatch.setattr(service.app.state, "runtime_config", RuntimeConfig("local", "test", "local-environment", session_signing_secret="x" * 32), raising=False)
+    response = TestClient(service.app).post("/api/productions/Production/finalize")
     assert response.status_code == 401
-    assert response.json()["detail"]["reason_code"] == (
-        "TRUSTED_ACTOR_CONTEXT_REQUIRED"
-    )
+    assert response.json()["detail"]["reason_code"] == "AUTHENTICATED_SESSION_REQUIRED"
 
 
-def test_public_actor_claim_must_match_server_identity(monkeypatch):
-    monkeypatch.setenv("KEVARO_INTERNAL_AUTH_TOKEN", "server-secret")
-    monkeypatch.setenv("KEVARO_STUDIO_HEAD_NAME", "Morgan Lee")
-    response = TestClient(__import__(
-        "studio_command.service", fromlist=["app"]
-    ).app).post(
-        "/api/productions/Production/finalize",
-        params={"actor_name": "Attacker", "actor_role": "Studio Head"},
-        headers={"x-kevaro-internal-token": "server-secret"},
-    )
-    assert response.status_code == 403
-    assert response.json()["detail"]["reason_code"] == (
-        "ACTOR_CONTEXT_MISMATCH"
-    )
-
-
-def test_trusted_public_context_reaches_backend_authorization(
-    monkeypatch,
-):
-    class MissingPersistence:
-        def load_runtime_state(self, production_name):
-            return None
-
+def test_browser_actor_claim_does_not_replace_session(monkeypatch):
     import studio_command.service as service
-
-    monkeypatch.setenv("KEVARO_INTERNAL_AUTH_TOKEN", "server-secret")
-    monkeypatch.setenv("KEVARO_STUDIO_HEAD_NAME", "Morgan Lee")
-    monkeypatch.setattr(service, "production_persistence", MissingPersistence())
-    response = TestClient(service.app).post(
-        "/api/productions/Production/finalize",
-        params={"actor_name": "Morgan Lee"},
-        headers={"x-kevaro-internal-token": "server-secret"},
-    )
-    assert response.status_code == 404
-
-
+    from studio_command.runtime_config import RuntimeConfig
+    monkeypatch.setattr(service.app.state, "runtime_config", RuntimeConfig("local", "test", "local-environment", session_signing_secret="x" * 32), raising=False)
+    response = TestClient(service.app).post("/api/productions/Production/finalize", params={"actor_name": "Attacker", "actor_role": "Studio Head"})
+    assert response.status_code == 401

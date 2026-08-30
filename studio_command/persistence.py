@@ -11,6 +11,7 @@ from .identity import canonical_production_name, require_production_identity
 from .models import (
     FinalProductionPackage,
     GovernedProductionRuntimeState,
+    CrewMember,
     ProductionAssetRegistry,
 )
 from fastapi.encoders import jsonable_encoder
@@ -72,6 +73,7 @@ def _firestore_decode(value):
 DEFAULT_PROJECT_ID = "kevaro-studio-command"
 DEFAULT_BUCKET_NAME = "kevaro-studio-command-production-artifacts"
 DEFAULT_PRODUCTIONS_COLLECTION = "productions"
+DEFAULT_CREW_COLLECTION = "crew_members"
 
 
 @dataclass(frozen=True)
@@ -79,6 +81,7 @@ class ProductionPersistenceConfig:
     project_id: str = DEFAULT_PROJECT_ID
     bucket_name: str = DEFAULT_BUCKET_NAME
     productions_collection: str = DEFAULT_PRODUCTIONS_COLLECTION
+    crew_collection: str = DEFAULT_CREW_COLLECTION
 
 
 def _runtime_identity(runtime_state: GovernedProductionRuntimeState) -> str:
@@ -120,6 +123,30 @@ class ProductionPersistence:
             .collection(self.config.productions_collection)
             .document(document_id)
         )
+
+    def _crew_document(self, auth_subject: str):
+        if not auth_subject.strip():
+            raise ValueError("Authentication subject must not be empty.")
+        document_id = sha256(auth_subject.encode("utf-8")).hexdigest()
+        return self.firestore_client.collection(self.config.crew_collection).document(document_id)
+
+    def save_crew_member(self, member: CrewMember) -> None:
+        """Provision crew authorization; public sign-in never writes this record."""
+        self._crew_document(member.auth_subject).set(
+            _firestore_encode(jsonable_encoder(member.model_dump(mode="json")))
+        )
+
+    def load_crew_member(self, auth_subject: str) -> CrewMember | None:
+        snapshot = self._crew_document(auth_subject).get()
+        if not snapshot.exists:
+            return None
+        payload = snapshot.to_dict()
+        if not isinstance(payload, dict):
+            return None
+        member = CrewMember.model_validate(_firestore_decode(payload))
+        if member.auth_subject != auth_subject:
+            raise ValueError("Persisted crew authentication subject is invalid.")
+        return member
 
     def save_runtime_state(
         self,

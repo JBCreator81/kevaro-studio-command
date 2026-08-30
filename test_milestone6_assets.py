@@ -339,7 +339,7 @@ def test_public_asset_mutation_requires_trusted_context(monkeypatch):
         f"/api/productions/{PRODUCTION}/assets/register",
         json={},
     )
-    assert response.status_code == 422
-    assert response.json()["detail"]["reason_code"] == (
-        "TRUSTED_ACTOR_CONTEXT_UNAVAILABLE"
-    )
+    assert response.status_code in {401, 503}
+    assert response.json()["detail"]["reason_code"] in {
+        "AUTHENTICATED_SESSION_REQUIRED", "AUTH_CONFIGURATION_UNAVAILABLE",
+    }

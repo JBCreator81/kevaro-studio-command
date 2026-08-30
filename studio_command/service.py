@@ -10,12 +10,13 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from studio_command.access import AuthorizationDenied, require_access
+from studio_command.auth import (SESSION_COOKIE, SessionError, issue_session, resolve_crew_identity, verify_session)
 from studio_command.accountability import human_actor
 from studio_command.accountability import ai_actor
 from studio_command.assets import (
@@ -136,93 +137,58 @@ class AssetReviewRequest(BaseModel):
     comparison_version_id: str | None = None
 
 
-def _is_protected_public_mutation(request: Request) -> bool:
-    if request.method != "POST":
-        return False
+def _requires_crew_session(request: Request) -> bool:
     path = request.url.path
-    return path == "/api/reality-shift" or (
-        path.startswith("/api/productions/")
-        and (
-            path.endswith(PROTECTED_MUTATION_SUFFIXES)
-            or "/assets" in path
-        )
+    if path == "/api/reality-shift":
+        return request.method == "POST"
+    return path.startswith("/api/productions/") and (
+        request.method == "GET" or request.method == "POST"
     )
 
 
-def _boundary_denial(
-    status_code: int,
-    reason_code: str,
-    reason: str,
-) -> JSONResponse:
-    return JSONResponse(
-        status_code=status_code,
-        content={
-            "detail": {
-                "error": "ACCESS_DENIED",
-                "allowed": False,
-                "reason_code": reason_code,
-                "reason": reason,
-            }
-        },
-    )
+def _boundary_denial(status_code: int, reason_code: str, reason: str) -> JSONResponse:
+    return JSONResponse(status_code=status_code, content={"detail": {
+        "error": "ACCESS_DENIED", "allowed": False,
+        "reason_code": reason_code, "reason": reason,
+    }})
 
 
 @app.middleware("http")
-async def require_trusted_public_actor(
-    request: Request,
-    call_next,
-):
-    """Keep caller-supplied roles outside the public mutation trust boundary."""
-    if not _is_protected_public_mutation(request):
+async def require_authenticated_crew_session(request: Request, call_next):
+    """Resolve browser identity only from a signed HttpOnly session."""
+    if not _requires_crew_session(request):
         return await call_next(request)
-
     config = getattr(request.app.state, "runtime_config", None)
     if config is None:
         try:
             config = load_runtime_config()
         except SecretConfigurationError:
-            return _boundary_denial(
-                503, "DEPLOYED_SECRET_CONFIGURATION_UNAVAILABLE",
-                "Protected mutations are disabled because deployed secret configuration is unavailable.",
-            )
-    expected_token = config.internal_auth_token or ""
-    if not expected_token:
-        return _boundary_denial(
-            422,
-            "TRUSTED_ACTOR_CONTEXT_UNAVAILABLE",
-            "Protected mutations are disabled until a trusted server actor token is configured.",
-        )
-
-    supplied_token = request.headers.get("x-kevaro-internal-token", "")
-    if not supplied_token or not hmac.compare_digest(
-        supplied_token,
-        expected_token,
-    ):
-        return _boundary_denial(
-            401,
-            "TRUSTED_ACTOR_CONTEXT_REQUIRED",
-            "A valid trusted server actor context is required.",
-        )
-
-    configured_name = config.studio_head_name
-    claimed_name = (
-        request.query_params.get("decided_by")
-        or request.query_params.get("actor_name")
-    )
-    claimed_role = request.query_params.get("actor_role")
-    claimed_type = request.query_params.get("actor_type")
-    if (
-        (claimed_name and claimed_name != configured_name)
-        or (claimed_role and claimed_role.casefold() != "studio head")
-        or (claimed_type and claimed_type.casefold() != "human")
-    ):
-        return _boundary_denial(
-            403,
-            "ACTOR_CONTEXT_MISMATCH",
-            "Caller-supplied identity does not match the server-authorized Studio Head.",
-        )
-
+            return _boundary_denial(503, "AUTH_CONFIGURATION_UNAVAILABLE", "Authentication is unavailable.")
+    secret = config.session_signing_secret or ""
+    if not secret:
+        return _boundary_denial(503, "AUTH_CONFIGURATION_UNAVAILABLE", "Crew session authentication is not configured.")
+    token = request.cookies.get(SESSION_COOKIE, "")
+    if not token:
+        return _boundary_denial(401, "AUTHENTICATED_SESSION_REQUIRED", "Sign in with an assigned crew account.")
+    try:
+        request.state.auth_subject = verify_session(token, secret)
+    except SessionError:
+        return _boundary_denial(401, "INVALID_AUTHENTICATED_SESSION", "The crew session is invalid or expired.")
     return await call_next(request)
+
+
+def _crew_identity(request: Request, production_name: str):
+    config = getattr(request.app.state, "runtime_config", None) or load_runtime_config()
+    try:
+        return resolve_crew_identity(
+            token=request.cookies.get(SESSION_COOKIE, ""),
+            secret=config.session_signing_secret or "",
+            persistence=production_persistence, production_name=production_name,
+        )
+    except SessionError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
 def _asset_actor(name: str, role: str, actor_type: str):
@@ -308,6 +274,72 @@ def log_event(
     )
 
 
+class SignInRequest(BaseModel):
+    credential: str
+
+
+class LocalSignInRequest(BaseModel):
+    auth_subject: str
+
+
+def _set_session_cookie(response: Response, token: str, *, secure: bool) -> None:
+    response.set_cookie(SESSION_COOKIE, token, max_age=8 * 60 * 60, httponly=True, secure=secure, samesite="lax", path="/")
+
+
+@app.get("/api/auth/config")
+def auth_config() -> dict[str, Any]:
+    config = getattr(app.state, "runtime_config", None) or load_runtime_config()
+    return {
+        "provider": "google" if config.deployed else "local",
+        "google_client_id": config.google_auth_client_id if config.deployed else None,
+        "local_auth_enabled": bool(config.local_auth_enabled and not config.deployed),
+    }
+
+
+@app.post("/api/auth/google")
+def google_sign_in(request: SignInRequest, response: Response) -> dict[str, Any]:
+    config = getattr(app.state, "runtime_config", None) or load_runtime_config()
+    if not config.deployed or not config.google_auth_client_id or not config.session_signing_secret:
+        raise HTTPException(status_code=503, detail="Google crew sign-in is not configured.")
+    try:
+        from google.auth.transport.requests import Request as GoogleRequest
+        from google.oauth2 import id_token
+        claims = id_token.verify_oauth2_token(request.credential, GoogleRequest(), config.google_auth_client_id)
+        subject = claims["sub"]
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="Google identity credential is invalid.") from exc
+    member = production_persistence.load_crew_member(subject)
+    if member is None or not member.active:
+        raise HTTPException(status_code=403, detail="Google account is not assigned to active crew.")
+    _set_session_cookie(response, issue_session(subject, config.session_signing_secret), secure=True)
+    return {"signed_in": True, "display_name": member.display_name}
+
+
+@app.post("/api/auth/local")
+def local_sign_in(request: LocalSignInRequest, response: Response) -> dict[str, Any]:
+    config = getattr(app.state, "runtime_config", None) or load_runtime_config()
+    if config.deployed or not config.local_auth_enabled:
+        raise HTTPException(status_code=404, detail="Local authentication is disabled.")
+    if not config.session_signing_secret:
+        raise HTTPException(status_code=503, detail="Local session signing is not configured.")
+    member = production_persistence.load_crew_member(request.auth_subject)
+    if member is None or not member.active:
+        raise HTTPException(status_code=403, detail="Local identity is not assigned to active crew.")
+    _set_session_cookie(response, issue_session(request.auth_subject, config.session_signing_secret), secure=False)
+    return {"signed_in": True, "display_name": member.display_name}
+
+
+@app.post("/api/auth/sign-out")
+def sign_out(response: Response) -> dict[str, bool]:
+    response.delete_cookie(SESSION_COOKIE, path="/", httponly=True, samesite="lax")
+    return {"signed_in": False}
+
+
+@app.get("/api/auth/session")
+def current_session(request: Request, production_name: str) -> dict[str, Any]:
+    return {"signed_in": True, "crew": _crew_identity(request, production_name).public_dict()}
+
+
 @app.on_event("startup")
 async def startup_event() -> None:
     try:
@@ -374,10 +406,7 @@ def studio_snapshot() -> Any:
 
 @app.get("/api/productions/{production_name}/studio-snapshot")
 def live_studio_snapshot(
-    production_name: str,
-    actor_name: str = "Studio Head",
-    actor_role: str = "Studio Head",
-    guidance_level: str = "Standard",
+    production_name: str, request: Request = None, guidance_level: str = "Standard",
 ) -> Any:
     """Build UI state from pending review or the governed runtime."""
     from studio_command.graph import build_production_graph
@@ -387,7 +416,7 @@ def live_studio_snapshot(
     )
 
     canonical_name = canonical_production_name(production_name)
-    actor = human_actor(actor_name, actor_role)
+    actor = (_crew_identity(request, canonical_name).actor if request is not None else human_actor("Studio Head", "Studio Head"))
     runtime_state = production_persistence.load_runtime_state(canonical_name)
     load_registry = getattr(production_persistence, "load_asset_registry", None)
     asset_registry = load_registry(canonical_name) if load_registry else None
@@ -478,8 +507,9 @@ def live_studio_snapshot(
 
 
 @app.get("/api/productions/{production_name}/assets")
-def list_production_assets(production_name: str) -> dict[str, Any]:
+def list_production_assets(production_name: str, request: Request) -> dict[str, Any]:
     canonical_name = canonical_production_name(production_name)
+    _crew_identity(request, canonical_name)
     if not production_persistence.production_exists(canonical_name):
         raise HTTPException(status_code=404, detail="Production was not found.")
     return asset_snapshot(production_persistence.load_asset_registry(canonical_name))
@@ -512,13 +542,11 @@ def _resolved_storage(
 
 @app.post("/api/productions/{production_name}/assets/register")
 def register_production_asset(
-    production_name: str, request: AssetRegistrationRequest,
-    actor_name: str = "Studio Head", actor_role: str = "Studio Head",
-    actor_type: str = "HUMAN",
+    production_name: str, request: AssetRegistrationRequest, http_request: Request,
 ) -> dict[str, Any]:
     canonical_name = canonical_production_name(production_name)
     node = _asset_node(canonical_name, request.node_id)
-    actor = _asset_actor(actor_name, actor_role, actor_type)
+    actor = _crew_identity(http_request, canonical_name).actor
     asset_id = f"asset-{uuid4().hex}"
     try:
         require_access(
@@ -551,12 +579,10 @@ def register_production_asset(
 
 @app.post("/api/productions/{production_name}/assets/{asset_id}/versions")
 def create_production_asset_version(
-    production_name: str, asset_id: str, request: AssetVersionRequest,
-    actor_name: str = "Studio Head", actor_role: str = "Studio Head",
-    actor_type: str = "HUMAN",
+    production_name: str, asset_id: str, request: AssetVersionRequest, http_request: Request,
 ) -> dict[str, Any]:
     canonical_name = canonical_production_name(production_name)
-    actor = _asset_actor(actor_name, actor_role, actor_type)
+    actor = _crew_identity(http_request, canonical_name).actor
     try:
         registry = production_persistence.load_asset_registry(canonical_name)
         versions = [item for item in registry.assets if item.asset_id == asset_id]
@@ -588,16 +614,14 @@ def create_production_asset_version(
 
 @app.post("/api/productions/{production_name}/assets/{asset_id}/submit-review")
 def submit_production_asset_review(
-    production_name: str, asset_id: str, version_id: str,
-    actor_name: str = "Studio Head", actor_role: str = "Studio Head",
-    actor_type: str = "HUMAN",
+    production_name: str, asset_id: str, version_id: str, request: Request,
 ) -> dict[str, Any]:
     try:
         asset = submit_asset_for_review(
             persistence=production_persistence,
             production_name=canonical_production_name(production_name),
             asset_id=asset_id, version_id=version_id,
-            actor=_asset_actor(actor_name, actor_role, actor_type),
+            actor=_crew_identity(http_request, production_name).actor,
         )
         return asset.model_dump(mode="json")
     except (ValueError, AuthorizationDenied) as exc:
@@ -606,15 +630,13 @@ def submit_production_asset_review(
 
 @app.post("/api/productions/{production_name}/assets/{asset_id}/handoff")
 def handoff_production_asset(
-    production_name: str, asset_id: str, request: AssetHandoffRequest,
-    actor_name: str = "Studio Head", actor_role: str = "Studio Head",
-    actor_type: str = "HUMAN",
+    production_name: str, asset_id: str, request: AssetHandoffRequest, http_request: Request,
 ) -> dict[str, Any]:
     try:
         handoff = handoff_asset(
             persistence=production_persistence,
             production_name=canonical_production_name(production_name),
-            asset_id=asset_id, actor=_asset_actor(actor_name, actor_role, actor_type),
+            asset_id=asset_id, actor=_crew_identity(http_request, production_name).actor,
             target_tool=request.target_tool, brief=request.brief,
             requirements=request.requirements, evidence_context=request.evidence_context,
             due_date=request.due_date, approval_context=request.approval_context,
@@ -627,12 +649,10 @@ def handoff_production_asset(
 
 @app.post("/api/productions/{production_name}/assets/{asset_id}/return")
 def return_production_asset(
-    production_name: str, asset_id: str, request: AssetReturnRequest,
-    actor_name: str = "Studio Head", actor_role: str = "Studio Head",
-    actor_type: str = "HUMAN",
+    production_name: str, asset_id: str, request: AssetReturnRequest, http_request: Request,
 ) -> dict[str, Any]:
     canonical_name = canonical_production_name(production_name)
-    actor = _asset_actor(actor_name, actor_role, actor_type)
+    actor = _crew_identity(http_request, canonical_name).actor
     try:
         registry = production_persistence.load_asset_registry(canonical_name)
         versions = [item for item in registry.assets if item.asset_id == asset_id]
@@ -677,16 +697,14 @@ def return_production_asset(
 
 @app.post("/api/productions/{production_name}/assets/{asset_id}/review")
 def review_production_asset(
-    production_name: str, asset_id: str, request: AssetReviewRequest,
-    actor_name: str = "Studio Head", actor_role: str = "Studio Head",
-    actor_type: str = "HUMAN",
+    production_name: str, asset_id: str, request: AssetReviewRequest, http_request: Request,
 ) -> dict[str, Any]:
     try:
         asset = review_asset(
             persistence=production_persistence,
             production_name=canonical_production_name(production_name),
             asset_id=asset_id, version_id=request.version_id,
-            actor=_asset_actor(actor_name, actor_role, actor_type),
+            actor=_crew_identity(http_request, production_name).actor,
             decision=request.decision, notes=request.notes,
             annotations=request.annotations,
             comparison_version_id=request.comparison_version_id,
@@ -709,7 +727,7 @@ if FRONTEND_DIST.exists():
 
 @app.post("/api/productions/{production_name}/decision")
 def studio_head_decision(
-    production_name: str,
+    production_name: str, request: Request,
     decision: str,
     conditions: list[str] | None = None,
     decision_notes: str = "",
@@ -717,9 +735,11 @@ def studio_head_decision(
     unresolved_risks_acknowledged: list[str] | None = None,
     actor_role: str = "Studio Head",
 ) -> dict[str, Any]:
+    identity = _crew_identity(request, production_name)
+    decided_by = identity.member.display_name
     try:
         require_access(
-            actor=human_actor(decided_by, actor_role), action="APPROVE",
+            actor=identity.actor, action="APPROVE",
             accountability=None,
         )
     except AuthorizationDenied as exc:
@@ -832,14 +852,10 @@ def studio_head_decision(
 
 
 @app.post("/api/productions/{production_name}/finalize")
-def finalize_production(
-    production_name: str,
-    actor_name: str = "Studio Head",
-    actor_role: str = "Studio Head",
-) -> dict[str, Any]:
+def finalize_production(production_name: str, request: Request) -> dict[str, Any]:
     try:
         require_access(
-            actor=human_actor(actor_name, actor_role), action="FINALIZE",
+            actor=_crew_identity(request, production_name).actor, action="FINALIZE",
             accountability=None,
         )
     except AuthorizationDenied as exc:
@@ -987,14 +1003,10 @@ def finalize_production(
 
 
 @app.post("/api/productions/{production_name}/deliver")
-def deliver_production(
-    production_name: str,
-    actor_name: str = "Studio Head",
-    actor_role: str = "Studio Head",
-) -> dict[str, Any]:
+def deliver_production(production_name: str, request: Request) -> dict[str, Any]:
     try:
         require_access(
-            actor=human_actor(actor_name, actor_role), action="DELIVER",
+            actor=_crew_identity(request, production_name).actor, action="DELIVER",
             accountability=None,
         )
     except AuthorizationDenied as exc:
@@ -1099,21 +1111,18 @@ from studio_command.reality import apply_reality_shift
 class RealityShiftRequest(BaseModel):
     changed_node_ids: list[str]
     reason: str
-    actor_name: str = "Studio Head"
-    actor_role: str = "Studio Head"
 
 
 @app.post("/api/reality-shift")
-def reality_shift(request: RealityShiftRequest) -> dict[str, Any]:
+def reality_shift(payload: RealityShiftRequest, request: Request) -> dict[str, Any]:
+    snapshot = studio_snapshot()
+    identity = _crew_identity(request, snapshot["production_name"])
     try:
         require_access(
-            actor=human_actor(request.actor_name, request.actor_role),
-            action="REALITY_SHIFT", accountability=None,
+            actor=identity.actor, action="REALITY_SHIFT", accountability=None,
         )
     except AuthorizationDenied as exc:
         raise HTTPException(status_code=403, detail=exc.as_detail()) from exc
-    snapshot = studio_snapshot()
-
     from studio_command.models import ProductionGraphNode, ProductionGraphState
 
     from studio_command.models import ProductionGraphNode, ProductionGraphState
@@ -1148,8 +1157,8 @@ def reality_shift(request: RealityShiftRequest) -> dict[str, Any]:
 
     result = apply_reality_shift(
         graph_state=graph_state,
-        changed_node_ids=request.changed_node_ids,
-        reason=request.reason,
+        changed_node_ids=payload.changed_node_ids,
+        reason=payload.reason,
     )
 
     return {

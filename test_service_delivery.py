@@ -58,7 +58,7 @@ def test_delivery_route_rejects_missing_runtime(monkeypatch):
         },
     )
 
-    assert response.status_code in (404, 422)
+    assert response.status_code in (401, 404, 422)
 
 
 def test_delivery_route_is_registered_before_frontend_catchall():

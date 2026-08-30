@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class AccountabilityActor(BaseModel):
     name: str
+    user_id: str | None = Field(default=None, exclude_if=lambda value: value is None)
     actor_type: Literal["HUMAN", "AI_AGENT"]
     role: str
 
@@ -43,6 +44,30 @@ class AccountableArtifact(BaseModel):
             "compatibility with records created before Crew Identity."
         ),
     )
+
+
+class CrewProductionAssignment(BaseModel):
+    """Stored production authority for one authenticated human crew member."""
+
+    production_name: str
+    roles: List[str] = Field(default_factory=list)
+    owned_node_ids: List[str] = Field(default_factory=list)
+    owned_task_ids: List[str] = Field(default_factory=list)
+    reviewer_node_ids: List[str] = Field(default_factory=list)
+    verifier_node_ids: List[str] = Field(default_factory=list)
+    studio_head: bool = False
+
+
+class CrewMember(BaseModel):
+    """Persistent mapping from an authentication subject to crew identity."""
+
+    user_id: str
+    auth_subject: str
+    display_name: str
+    organization_id: str
+    organization_name: str | None = None
+    active: bool = True
+    assignments: List[CrewProductionAssignment] = Field(default_factory=list)
 
 
 AssetCategory = Literal[

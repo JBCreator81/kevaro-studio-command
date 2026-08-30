@@ -13,6 +13,7 @@ from studio_command.tools import search_web
 
 PARALLEL_VALUE = "parallel-test-value-not-a-real-secret"
 AUTH_VALUE = "auth-test-value-not-a-real-secret"
+SESSION_VALUE = "session-test-value-at-least-thirty-two-bytes"
 
 
 class Provider:
@@ -29,13 +30,14 @@ class Provider:
 
 
 def cloud_environment():
-    return {"KEVARO_RUNTIME_MODE": "cloud", "GOOGLE_CLOUD_PROJECT": "kevaro-studio-command"}
+    return {"KEVARO_RUNTIME_MODE": "cloud", "GOOGLE_CLOUD_PROJECT": "kevaro-studio-command", "KEVARO_GOOGLE_AUTH_CLIENT_ID": "google-client"}
 
 
 def test_secret_manager_backed_loading_uses_project_and_both_required_secrets():
     provider = Provider({
         "parallel-api-key": PARALLEL_VALUE,
         "kevaro-internal-auth-token": AUTH_VALUE,
+        "kevaro-session-signing-secret": SESSION_VALUE,
     })
     config = load_runtime_config(environment=cloud_environment(), secret_provider=provider)
     assert config.parallel_api_key == PARALLEL_VALUE
@@ -44,6 +46,7 @@ def test_secret_manager_backed_loading_uses_project_and_both_required_secrets():
     assert provider.requests == [
         ("kevaro-studio-command", "parallel-api-key"),
         ("kevaro-studio-command", "kevaro-internal-auth-token"),
+        ("kevaro-studio-command", "kevaro-session-signing-secret"),
     ]
 
 
@@ -86,6 +89,7 @@ def test_public_status_and_repr_never_contain_secret_values():
         "secret_manager": "configured",
         "parallel_credential": "configured",
         "protected_mutation_auth_boundary": "enabled",
+        "crew_session_auth": "disabled",
     }
 
 
@@ -110,7 +114,7 @@ def test_parallel_receives_credential_from_secret_provider_config(monkeypatch):
     monkeypatch.setattr("studio_command.tools.Parallel", Client)
     config = load_runtime_config(
         environment=cloud_environment(),
-        secret_provider=Provider({"parallel-api-key": PARALLEL_VALUE, "kevaro-internal-auth-token": AUTH_VALUE}),
+        secret_provider=Provider({"parallel-api-key": PARALLEL_VALUE, "kevaro-internal-auth-token": AUTH_VALUE, "kevaro-session-signing-secret": SESSION_VALUE}),
     )
     result = search_web("bounded objective", ["bounded query"], runtime_config=config)
     assert result["status"] == "success"
@@ -119,7 +123,7 @@ def test_parallel_receives_credential_from_secret_provider_config(monkeypatch):
 
 def test_public_mutation_identity_is_server_bound_even_with_valid_token(monkeypatch):
     import studio_command.service as service
-    config = RuntimeConfig("cloud", "kevaro-studio-command", "google-secret-manager", PARALLEL_VALUE, AUTH_VALUE, "Morgan Lee")
+    config = RuntimeConfig("cloud", "kevaro-studio-command", "google-secret-manager", PARALLEL_VALUE, AUTH_VALUE, "Morgan Lee", SESSION_VALUE, "google-client")
     monkeypatch.setattr(service.app.state, "runtime_config", config, raising=False)
     response = TestClient(service.app).post(
         "/api/productions/Production/assets/register",
@@ -127,5 +131,5 @@ def test_public_mutation_identity_is_server_bound_even_with_valid_token(monkeypa
         headers={"x-kevaro-internal-token": AUTH_VALUE},
         json={},
     )
-    assert response.status_code == 403
-    assert response.json()["detail"]["reason_code"] == "ACTOR_CONTEXT_MISMATCH"
+    assert response.status_code == 401
+    assert response.json()["detail"]["reason_code"] == "AUTHENTICATED_SESSION_REQUIRED"
