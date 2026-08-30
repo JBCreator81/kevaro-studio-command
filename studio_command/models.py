@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Literal
+from typing import Any, Dict, List, Literal
 from pydantic import BaseModel, Field
 
 
@@ -134,16 +134,18 @@ class ProductionBrief(AccountableArtifact):
 
 
 class EvidenceSource(BaseModel):
-    title: str = Field(
-        description="Human-readable title or name of the evidence source."
+    title: str | None = Field(
+        default=None,
+        description="Provider-supplied source title, when available."
     )
 
     url: str = Field(
         description="Canonical source URL when available."
     )
 
-    publisher_or_domain: str = Field(
-        description="Publisher, organization, platform, or domain responsible for the source."
+    publisher_or_domain: str | None = Field(
+        default=None,
+        description="Publisher or domain, when available or derived from the source URL."
     )
 
     evidence_summary: str = Field(
@@ -154,9 +156,15 @@ class EvidenceSource(BaseModel):
         description="Why this evidence matters to a production decision, deliverable, constraint, or risk."
     )
 
-    confidence: str = Field(
-        description="Evidence confidence classification: high, medium, or low."
+    confidence: str | None = Field(
+        default=None,
+        description="Evidence confidence or relevance classification, when available."
     )
+    provider: str | None = None
+    citation_id: str | None = None
+    excerpts: List[str] = Field(default_factory=list)
+    publish_date: str | None = None
+    retrieval_metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 class ResearchEvidence(BaseModel):
@@ -183,6 +191,25 @@ class ResearchEvidence(BaseModel):
     requires_studio_head_decision: bool = Field(
         description="Whether the evidence creates or materially affects a Studio Head approval gate."
     )
+    source_reference_ids: List[str] = Field(default_factory=list)
+
+
+class ParallelSearchProvenance(BaseModel):
+    """Non-secret proof of a real Parallel search invocation."""
+    provider: Literal["Parallel"] = "Parallel"
+    verification_status: Literal["VERIFIED", "UNAVAILABLE", "NOT_RUN"] = "NOT_RUN"
+    objective: str | None = None
+    search_queries: List[str] = Field(default_factory=list)
+    invoked_at: datetime | None = None
+    search_id: str | None = None
+    session_id: str | None = None
+    invocation_marker: str | None = None
+    result_count: int = 0
+    usage: List[Dict[str, Any]] = Field(default_factory=list)
+    warnings: List[Dict[str, Any]] = Field(default_factory=list)
+    production_identity: str | None = None
+    research_node: str = "Research"
+    unavailable_reason: str | None = None
 
 
 class ResearchPacket(AccountableArtifact):
@@ -197,6 +224,11 @@ class ResearchPacket(AccountableArtifact):
     blockers: List[str] = Field(
         description="Evidence-related blockers that could prevent production work from proceeding safely."
     )
+    parallel_provenance: ParallelSearchProvenance | None = Field(
+        default=None,
+        description="Exact non-secret Parallel runtime provenance; absent on legacy packets.",
+    )
+    evidence_gaps: List[str] = Field(default_factory=list)
 
 
 class CreativeConcept(BaseModel):

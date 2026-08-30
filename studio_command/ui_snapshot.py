@@ -18,6 +18,79 @@ from .models import (
 )
 
 
+_SENSITIVE_EVIDENCE_KEYS = {
+    "api_key", "apikey", "authorization", "authorization_header",
+    "headers", "secret", "token", "access_token",
+}
+
+
+def _secret_safe_evidence(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _secret_safe_evidence(item)
+            for key, item in value.items()
+            if key.lower() not in _SENSITIVE_EVIDENCE_KEYS
+        }
+    if isinstance(value, list):
+        return [_secret_safe_evidence(item) for item in value]
+    return value
+
+
+def _parallel_evidence_summary(research_packet: Any) -> dict[str, Any]:
+    """Derive concise, secret-safe judge proof from current or legacy research."""
+    if not isinstance(research_packet, dict):
+        return {
+            "provider": "Parallel", "status": "NOT_RUN",
+            "grounded_source_count": 0,
+            "evidence_gaps": ["Research evidence was not recorded."],
+            "most_relevant_citations": [], "last_invocation_at": None,
+            "invocation_marker": None,
+        }
+    provenance = research_packet.get("parallel_provenance")
+    provenance = provenance if isinstance(provenance, dict) else {}
+    status = provenance.get("verification_status")
+    if status not in {"VERIFIED", "UNAVAILABLE", "NOT_RUN"}:
+        status = "UNAVAILABLE" if research_packet else "NOT_RUN"
+    citations, seen_urls = [], set()
+    records = research_packet.get("evidence") or []
+    for evidence in records:
+        if not isinstance(evidence, dict):
+            continue
+        for source in evidence.get("sources") or []:
+            if not isinstance(source, dict):
+                continue
+            url = source.get("url")
+            if not isinstance(url, str) or not url or url in seen_urls:
+                continue
+            seen_urls.add(url)
+            citations.append({
+                "citation_id": source.get("citation_id"),
+                "title": source.get("title"), "url": url,
+                "source": source.get("publisher_or_domain"),
+                "finding": evidence.get("finding"),
+                "confidence": source.get("confidence"),
+                "relevance": source.get("production_relevance"),
+            })
+    gaps = list(research_packet.get("evidence_gaps") or [])
+    for evidence in records:
+        if isinstance(evidence, dict):
+            for gap in evidence.get("unresolved_questions") or []:
+                if gap not in gaps:
+                    gaps.append(gap)
+    return {
+        "provider": "Parallel", "status": status,
+        "query": {"objective": provenance.get("objective"),
+                  "search_queries": provenance.get("search_queries") or []},
+        "grounded_source_count": len(seen_urls), "evidence_gaps": gaps,
+        "most_relevant_citations": citations[:5],
+        "last_invocation_at": provenance.get("invoked_at"),
+        "invocation_marker": provenance.get("invocation_marker"),
+        "production_identity": provenance.get("production_identity"),
+        "research_node": provenance.get("research_node") or "Research",
+        "search_id": provenance.get("search_id"),
+    }
+
+
 def _node_intelligence(
     artifact_source: dict[str, Any],
     package_data: dict[str, Any] | None,
@@ -31,7 +104,7 @@ def _node_intelligence(
 
     return {
         "Production Brief": artifact("production_brief"),
-        "Research": artifact("research_packet"),
+        "Research": _secret_safe_evidence(artifact("research_packet")),
         "Creative Development": artifact("creative_treatment"),
         "Production Planning": artifact("production_plan"),
         "Scheduling": artifact("production_schedule"),
@@ -152,6 +225,8 @@ def build_pending_studio_command_snapshot(
         review_bundle["studio_head_decision_package"]["production_name"],
     )
     node_intelligence = _node_intelligence(review_bundle, None)
+    evidence_summary = _parallel_evidence_summary(node_intelligence.get("Research"))
+    evidence_summary["production_identity"] = canonical_name
     graph_snapshot = _graph_snapshot(
         graph_state, node_intelligence, actor, guidance_level,
         "STUDIO_HEAD_REVIEW",
@@ -169,6 +244,7 @@ def build_pending_studio_command_snapshot(
         "stale_artifacts": [],
         "graph": graph_snapshot,
         "node_intelligence": node_intelligence,
+        "evidence_summary": evidence_summary,
         "access": _artifact_access(node_intelligence, actor),
         "accountability": {
             name: value.get("accountability")
@@ -209,6 +285,8 @@ def build_studio_command_snapshot(
         else None
     )
     node_intelligence = _node_intelligence(approved_artifacts or {}, package_data)
+    evidence_summary = _parallel_evidence_summary(node_intelligence.get("Research"))
+    evidence_summary["production_identity"] = runtime_state.production_name
     graph_snapshot = _graph_snapshot(
         graph_state, node_intelligence, actor, guidance_level,
         runtime_state.current_stage,
@@ -226,6 +304,7 @@ def build_studio_command_snapshot(
         "stale_artifacts": runtime_state.memory_snapshot.stale_artifacts,
         "graph": graph_snapshot,
         "node_intelligence": node_intelligence,
+        "evidence_summary": evidence_summary,
         "access": _artifact_access(node_intelligence, actor),
         "accountability": {
             name: value.get("accountability")
