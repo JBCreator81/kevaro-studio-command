@@ -1,6 +1,7 @@
 from typing import Any, List
 
 from .identity import require_production_identity
+from .accountability import add_human_approval, human_decision_accountability
 
 from .models import (
     GovernedProductionRuntimeState,
@@ -78,6 +79,11 @@ def record_studio_head_decision(
         recommendation_followed=normalized_decision == recommendation,
         unresolved_risks_acknowledged=unresolved_risks_acknowledged,
         next_action=next_action,
+        accountability=human_decision_accountability(
+            decided_by=decided_by.strip(),
+            action="STUDIO_HEAD_DECISION_RECORDED",
+            status=normalized_decision,
+        ),
     )
 
 
@@ -172,6 +178,7 @@ def build_production_decision_history_entry(
             decision_record.unresolved_risks_acknowledged
         ),
         decision_notes=decision_record.decision_notes,
+        accountability=decision_record.accountability,
     )
 
 
@@ -246,6 +253,11 @@ def approve_governed_production(
                 "Approved production requires a non-empty approved artifact bundle."
             )
 
+        approved_artifacts = add_human_approval(
+            approved_artifacts,
+            decided_by=decided_by,
+            status=workflow_state.status,
+        )
         persistence.save_approved_artifacts(
             production_name=production_name,
             approved_artifacts=approved_artifacts,
@@ -515,6 +527,7 @@ def build_governed_production_runtime_state(
         execution_authorized=execution_authorized,
         corrective_cycle_active=corrective_cycle_active,
         current_stage=current_stage,
+        accountability=latest_history.accountability,
     )
 
 
@@ -1009,6 +1022,11 @@ def build_final_production_package(
         delivery_status=delivery_status,
         readiness_score=verification_report.readiness_score,
         final_notes=notes,
+        accountability=human_decision_accountability(
+            decided_by=latest_history.decided_by,
+            action="FINAL_PACKAGE_ASSEMBLED",
+            status=delivery_status,
+        ),
     )
 
 def finalize_production_package(

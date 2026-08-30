@@ -1,8 +1,49 @@
-from typing import List
+from datetime import datetime
+from typing import List, Literal
 from pydantic import BaseModel, Field
 
 
-class ProductionBrief(BaseModel):
+class AccountabilityActor(BaseModel):
+    name: str
+    actor_type: Literal["HUMAN", "AI_AGENT"]
+    role: str
+
+
+class AccountabilityAction(BaseModel):
+    action: str
+    actor: AccountabilityActor
+    timestamp: datetime
+    status: str
+    details: str | None = None
+
+
+class AccountabilityMetadata(BaseModel):
+    """Traceability metadata; never grants workflow or approval authority."""
+
+    human_owner: AccountabilityActor | None = None
+    ai_agent_responsible: AccountabilityActor | None = None
+    contributors: List[AccountabilityActor] = Field(default_factory=list)
+    reviewer_verifier: AccountabilityActor | None = None
+    approved_by: AccountabilityActor | None = None
+    last_changed_by: AccountabilityActor | None = None
+    created_at: datetime | None = None
+    last_changed_at: datetime | None = None
+    current_status: str | None = None
+    action_history: List[AccountabilityAction] = Field(default_factory=list)
+    human_final_authority: bool = True
+
+
+class AccountableArtifact(BaseModel):
+    accountability: AccountabilityMetadata | None = Field(
+        default=None,
+        description=(
+            "Optional crew attribution and action history. Absence preserves "
+            "compatibility with records created before Crew Identity."
+        ),
+    )
+
+
+class ProductionBrief(AccountableArtifact):
     production_title: str = Field(
         description="A concise working title for the production."
     )
@@ -112,7 +153,7 @@ class ResearchEvidence(BaseModel):
     )
 
 
-class ResearchPacket(BaseModel):
+class ResearchPacket(AccountableArtifact):
     evidence: List[ResearchEvidence] = Field(
         description="Evidence records produced for the Production Brief research questions."
     )
@@ -164,7 +205,7 @@ class CreativeConcept(BaseModel):
     )
 
 
-class CreativeTreatment(BaseModel):
+class CreativeTreatment(AccountableArtifact):
     recommended_concept: CreativeConcept = Field(
         description="The strongest creative concept recommended for production."
     )
@@ -228,7 +269,7 @@ class ProductionTask(BaseModel):
     )
 
 
-class ProductionPlan(BaseModel):
+class ProductionPlan(AccountableArtifact):
     production_name: str = Field(
         description="Production being planned."
     )
@@ -300,7 +341,7 @@ class ScheduledTask(BaseModel):
     )
 
 
-class ProductionSchedule(BaseModel):
+class ProductionSchedule(AccountableArtifact):
     production_name: str = Field(
         description="Production associated with this schedule."
     )
@@ -376,7 +417,7 @@ class MediaAssetRequirement(BaseModel):
     )
 
 
-class AssetMediaPlan(BaseModel):
+class AssetMediaPlan(AccountableArtifact):
     production_name: str = Field(
         description="Production associated with this asset plan."
     )
@@ -448,7 +489,7 @@ class ComplianceCheck(BaseModel):
     )
 
 
-class ClearanceComplianceReport(BaseModel):
+class ClearanceComplianceReport(AccountableArtifact):
     production_name: str = Field(
         description="Production being reviewed."
     )
@@ -524,7 +565,7 @@ class VerificationFinding(BaseModel):
     )
 
 
-class VerificationQAReport(BaseModel):
+class VerificationQAReport(AccountableArtifact):
     production_name: str = Field(
         description="Production being verified."
     )
@@ -602,7 +643,7 @@ class StudioHeadDecisionItem(BaseModel):
     )
 
 
-class StudioHeadDecisionPackage(BaseModel):
+class StudioHeadDecisionPackage(AccountableArtifact):
     production_name: str = Field(
         description="Production presented to the Studio Head."
     )
@@ -650,7 +691,7 @@ class StudioHeadDecisionPackage(BaseModel):
     )
 
 
-class StudioHeadDecisionRecord(BaseModel):
+class StudioHeadDecisionRecord(AccountableArtifact):
     production_name: str = Field(
         description="Production receiving the Studio Head's human decision."
     )
@@ -718,7 +759,7 @@ class ProductionWorkflowState(BaseModel):
     )
 
 
-class ProductionDecisionHistoryEntry(BaseModel):
+class ProductionDecisionHistoryEntry(AccountableArtifact):
     sequence: int = Field(
         description="Monotonic sequence number for this production decision event."
     )
@@ -985,7 +1026,7 @@ class StudioHeadImpactBrief(BaseModel):
     )
 
 
-class GovernedProductionRuntimeState(BaseModel):
+class GovernedProductionRuntimeState(AccountableArtifact):
     production_name: str = Field(
         description="Production controlled by the unified governed runtime."
     )
@@ -1053,7 +1094,7 @@ class ProductionExecutionAuthorization(BaseModel):
     )
 
 
-class ProductionGraphNode(BaseModel):
+class ProductionGraphNode(AccountableArtifact):
     node_id: str = Field(
         description="Stable identifier for a production graph node."
     )
@@ -1110,7 +1151,7 @@ class ProductionGraphState(BaseModel):
         description="Whether all required production nodes are completed."
     )
 
-class FinalProductionPackage(BaseModel):
+class FinalProductionPackage(AccountableArtifact):
     production_name: str = Field(
         description="Production represented by the final governed delivery package."
     )

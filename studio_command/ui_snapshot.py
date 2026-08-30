@@ -72,6 +72,17 @@ def _graph_snapshot(
                 "approval_required": node.approval_required,
                 "stale_reason": node.stale_reason,
                 "artifact": node_intelligence.get(node.node_id),
+                "accountability": (
+                    node.accountability.model_dump(mode="json")
+                    if node.accountability is not None
+                    else {
+                        "human_owner": None,
+                        "ai_agent_responsible": None,
+                        "responsible_role": node.responsible_role,
+                        "current_status": node.status,
+                        "human_final_authority": True,
+                    }
+                ),
             }
             for node in graph_state.nodes
         ],
@@ -105,6 +116,11 @@ def build_pending_studio_command_snapshot(
         "stale_artifacts": [],
         "graph": _graph_snapshot(graph_state, node_intelligence),
         "node_intelligence": node_intelligence,
+        "accountability": {
+            name: value.get("accountability")
+            if isinstance(value, dict) else None
+            for name, value in node_intelligence.items()
+        },
         "production_package": None,
         "delivery": None,
     }
@@ -147,6 +163,11 @@ def build_studio_command_snapshot(
         "stale_artifacts": runtime_state.memory_snapshot.stale_artifacts,
         "graph": _graph_snapshot(graph_state, node_intelligence),
         "node_intelligence": node_intelligence,
+        "accountability": {
+            name: value.get("accountability")
+            if isinstance(value, dict) else None
+            for name, value in node_intelligence.items()
+        },
         "production_package": package_data,
         "delivery": (
             {

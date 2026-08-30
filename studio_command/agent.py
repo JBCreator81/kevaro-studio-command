@@ -19,6 +19,7 @@ from .prompts import EXECUTIVE_PRODUCER_INSTRUCTION
 from .tools import search_web
 from .identity import require_production_identity
 from .persistence import ProductionPersistence
+from .accountability import add_pending_accountability
 
 
 RESEARCH_AGENT_INSTRUCTION = """
@@ -733,6 +734,7 @@ def _persist_pending_review_bundle(ctx, node_input):
 
         review_bundle[key] = _review_value(value)
 
+    review_bundle = add_pending_accountability(review_bundle)
     decision_package = review_bundle["studio_head_decision_package"]
     production_name = decision_package.get("production_name")
 
