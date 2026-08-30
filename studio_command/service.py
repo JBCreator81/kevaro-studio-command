@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+import hmac
 import json
 import os
 import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from studio_command.access import AuthorizationDenied, require_access
+from studio_command.accountability import human_actor
 from studio_command.exporter import complete_governed_delivery
 from studio_command.decisions import (
     build_production_execution_authorization,
@@ -44,6 +47,84 @@ app = FastAPI(
 )
 
 production_persistence = ProductionPersistence()
+
+PROTECTED_MUTATION_SUFFIXES = ("/decision", "/finalize", "/deliver")
+
+
+def _is_protected_public_mutation(request: Request) -> bool:
+    if request.method != "POST":
+        return False
+    path = request.url.path
+    return path == "/api/reality-shift" or (
+        path.startswith("/api/productions/")
+        and path.endswith(PROTECTED_MUTATION_SUFFIXES)
+    )
+
+
+def _boundary_denial(
+    status_code: int,
+    reason_code: str,
+    reason: str,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "detail": {
+                "error": "ACCESS_DENIED",
+                "allowed": False,
+                "reason_code": reason_code,
+                "reason": reason,
+            }
+        },
+    )
+
+
+@app.middleware("http")
+async def require_trusted_public_actor(
+    request: Request,
+    call_next,
+):
+    """Keep caller-supplied roles outside the public mutation trust boundary."""
+    if not _is_protected_public_mutation(request):
+        return await call_next(request)
+
+    expected_token = os.getenv("KEVARO_INTERNAL_AUTH_TOKEN", "")
+    if not expected_token:
+        return _boundary_denial(
+            422,
+            "TRUSTED_ACTOR_CONTEXT_UNAVAILABLE",
+            "Protected mutations are disabled until a trusted server actor token is configured.",
+        )
+
+    supplied_token = request.headers.get("x-kevaro-internal-token", "")
+    if not supplied_token or not hmac.compare_digest(
+        supplied_token,
+        expected_token,
+    ):
+        return _boundary_denial(
+            401,
+            "TRUSTED_ACTOR_CONTEXT_REQUIRED",
+            "A valid trusted server actor context is required.",
+        )
+
+    configured_name = os.getenv("KEVARO_STUDIO_HEAD_NAME", "Studio Head")
+    claimed_name = (
+        request.query_params.get("decided_by")
+        or request.query_params.get("actor_name")
+    )
+    claimed_role = request.query_params.get("actor_role")
+    if (
+        claimed_name and claimed_name != configured_name
+    ) or (
+        claimed_role and claimed_role.casefold() != "studio head"
+    ):
+        return _boundary_denial(
+            403,
+            "ACTOR_CONTEXT_MISMATCH",
+            "Caller-supplied identity does not match the server-authorized Studio Head.",
+        )
+
+    return await call_next(request)
 
 
 def log_event(
@@ -120,6 +201,8 @@ def studio_snapshot() -> Any:
 @app.get("/api/productions/{production_name}/studio-snapshot")
 def live_studio_snapshot(
     production_name: str,
+    actor_name: str = "Studio Head",
+    actor_role: str = "Studio Head",
 ) -> Any:
     """Build UI state from pending review or the governed runtime."""
     from studio_command.graph import build_production_graph
@@ -129,6 +212,7 @@ def live_studio_snapshot(
     )
 
     canonical_name = canonical_production_name(production_name)
+    actor = human_actor(actor_name, actor_role)
     runtime_state = production_persistence.load_runtime_state(canonical_name)
 
     if runtime_state is None:
@@ -160,6 +244,7 @@ def live_studio_snapshot(
                 production_name=canonical_name,
                 graph_state=graph_state,
                 review_bundle=review_bundle,
+                actor=actor,
             )
         except (KeyError, TypeError, ValueError) as exc:
             raise HTTPException(
@@ -207,6 +292,7 @@ def live_studio_snapshot(
         graph_state=graph_state,
         final_package=final_package,
         approved_artifacts=approved_artifacts,
+        actor=actor,
     )
 
 
@@ -229,7 +315,15 @@ def studio_head_decision(
     decision_notes: str = "",
     decided_by: str = "Studio Head",
     unresolved_risks_acknowledged: list[str] | None = None,
+    actor_role: str = "Studio Head",
 ) -> dict[str, Any]:
+    try:
+        require_access(
+            actor=human_actor(decided_by, actor_role), action="APPROVE",
+            accountability=None,
+        )
+    except AuthorizationDenied as exc:
+        raise HTTPException(status_code=403, detail=exc.as_detail()) from exc
     runtime_state = production_persistence.load_runtime_state(production_name)
 
     if runtime_state is not None:
@@ -340,7 +434,16 @@ def studio_head_decision(
 @app.post("/api/productions/{production_name}/finalize")
 def finalize_production(
     production_name: str,
+    actor_name: str = "Studio Head",
+    actor_role: str = "Studio Head",
 ) -> dict[str, Any]:
+    try:
+        require_access(
+            actor=human_actor(actor_name, actor_role), action="FINALIZE",
+            accountability=None,
+        )
+    except AuthorizationDenied as exc:
+        raise HTTPException(status_code=403, detail=exc.as_detail()) from exc
     runtime_state = production_persistence.load_runtime_state(
         production_name
     )
@@ -483,7 +586,16 @@ def finalize_production(
 @app.post("/api/productions/{production_name}/deliver")
 def deliver_production(
     production_name: str,
+    actor_name: str = "Studio Head",
+    actor_role: str = "Studio Head",
 ) -> dict[str, Any]:
+    try:
+        require_access(
+            actor=human_actor(actor_name, actor_role), action="DELIVER",
+            accountability=None,
+        )
+    except AuthorizationDenied as exc:
+        raise HTTPException(status_code=403, detail=exc.as_detail()) from exc
     runtime_state = production_persistence.load_runtime_state(production_name)
 
     if runtime_state is None:
@@ -584,10 +696,19 @@ from studio_command.reality import apply_reality_shift
 class RealityShiftRequest(BaseModel):
     changed_node_ids: list[str]
     reason: str
+    actor_name: str = "Studio Head"
+    actor_role: str = "Studio Head"
 
 
 @app.post("/api/reality-shift")
 def reality_shift(request: RealityShiftRequest) -> dict[str, Any]:
+    try:
+        require_access(
+            actor=human_actor(request.actor_name, request.actor_role),
+            action="REALITY_SHIFT", accountability=None,
+        )
+    except AuthorizationDenied as exc:
+        raise HTTPException(status_code=403, detail=exc.as_detail()) from exc
     snapshot = studio_snapshot()
 
     from studio_command.models import ProductionGraphNode, ProductionGraphState

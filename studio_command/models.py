@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Literal
+from typing import Dict, List, Literal
 from pydantic import BaseModel, Field
 
 
@@ -23,6 +23,8 @@ class AccountabilityMetadata(BaseModel):
     human_owner: AccountabilityActor | None = None
     ai_agent_responsible: AccountabilityActor | None = None
     contributors: List[AccountabilityActor] = Field(default_factory=list)
+    contributor_scopes: Dict[str, List[str]] = Field(default_factory=dict)
+    readers: List[AccountabilityActor] = Field(default_factory=list)
     reviewer_verifier: AccountabilityActor | None = None
     approved_by: AccountabilityActor | None = None
     last_changed_by: AccountabilityActor | None = None

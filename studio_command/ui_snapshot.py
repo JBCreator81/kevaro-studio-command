@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from .access import access_snapshot
+from .accountability import STUDIO_HEAD
 from .identity import require_production_identity
 from .models import (
+    AccountabilityActor,
     FinalProductionPackage,
     GovernedProductionRuntimeState,
     ProductionGraphState,
@@ -49,9 +52,24 @@ def _node_intelligence(
     }
 
 
+def _artifact_access(
+    node_intelligence: dict[str, Any],
+    actor: AccountabilityActor,
+) -> dict[str, Any]:
+    return {
+        name: access_snapshot(
+            actor=actor,
+            accountability=value.get("accountability")
+            if isinstance(value, dict) else None,
+        )
+        for name, value in node_intelligence.items()
+    }
+
+
 def _graph_snapshot(
     graph_state: ProductionGraphState,
     node_intelligence: dict[str, Any],
+    actor: AccountabilityActor,
 ) -> dict[str, Any]:
     return {
         "ready_nodes": graph_state.ready_nodes,
@@ -72,17 +90,28 @@ def _graph_snapshot(
                 "approval_required": node.approval_required,
                 "stale_reason": node.stale_reason,
                 "artifact": node_intelligence.get(node.node_id),
-                "accountability": (
-                    node.accountability.model_dump(mode="json")
-                    if node.accountability is not None
-                    else {
-                        "human_owner": None,
-                        "ai_agent_responsible": None,
-                        "responsible_role": node.responsible_role,
-                        "current_status": node.status,
-                        "human_final_authority": True,
-                    }
-                ),
+                "ownership": {
+                    "current_owner": (
+                        node.accountability.ai_agent_responsible.model_dump(
+                            mode="json"
+                        )
+                        if node.accountability
+                        and node.accountability.ai_agent_responsible
+                        else None
+                    ),
+                    "access": access_snapshot(
+                        actor=actor,
+                        accountability=node.accountability,
+                        status=node.status
+                    ),
+                },
+                "accountability": {
+                    "human_owner": None,
+                    "ai_agent_responsible": None,
+                    "responsible_role": node.responsible_role,
+                    "current_status": node.status,
+                    "human_final_authority": True,
+                },
             }
             for node in graph_state.nodes
         ],
@@ -94,6 +123,7 @@ def build_pending_studio_command_snapshot(
     production_name: str,
     graph_state: ProductionGraphState,
     review_bundle: dict[str, Any],
+    actor: AccountabilityActor = STUDIO_HEAD,
 ) -> dict[str, Any]:
     canonical_name = require_production_identity(
         production_name,
@@ -114,8 +144,9 @@ def build_pending_studio_command_snapshot(
         "active_conditions": [],
         "preserved_artifacts": [],
         "stale_artifacts": [],
-        "graph": _graph_snapshot(graph_state, node_intelligence),
+        "graph": _graph_snapshot(graph_state, node_intelligence, actor),
         "node_intelligence": node_intelligence,
+        "access": _artifact_access(node_intelligence, actor),
         "accountability": {
             name: value.get("accountability")
             if isinstance(value, dict) else None
@@ -132,6 +163,7 @@ def build_studio_command_snapshot(
     graph_state: ProductionGraphState,
     final_package: FinalProductionPackage | None = None,
     approved_artifacts: dict[str, Any] | None = None,
+    actor: AccountabilityActor = STUDIO_HEAD,
 ) -> dict[str, Any]:
     require_production_identity(
         runtime_state.production_name,
@@ -161,8 +193,9 @@ def build_studio_command_snapshot(
         "active_conditions": runtime_state.workflow_state.active_conditions,
         "preserved_artifacts": runtime_state.memory_snapshot.preserved_artifacts,
         "stale_artifacts": runtime_state.memory_snapshot.stale_artifacts,
-        "graph": _graph_snapshot(graph_state, node_intelligence),
+        "graph": _graph_snapshot(graph_state, node_intelligence, actor),
         "node_intelligence": node_intelligence,
+        "access": _artifact_access(node_intelligence, actor),
         "accountability": {
             name: value.get("accountability")
             if isinstance(value, dict) else None

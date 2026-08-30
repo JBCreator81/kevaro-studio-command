@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from .access import require_access
+from .accountability import STUDIO_HEAD, ai_actor
 from .models import (
+    AccountabilityActor,
+    AccountabilityMetadata,
     ProductionGraphNode,
     ProductionGraphState,
     ProductionPlan,
@@ -72,6 +76,15 @@ def build_production_graph(
                 ),
                 approval_required=plan_task.approval_required,
                 stale_reason=None,
+                accountability=AccountabilityMetadata(
+                    human_owner=STUDIO_HEAD,
+                    ai_agent_responsible=ai_actor(
+                        plan_task.responsible_role.lower().replace(" ", "_"),
+                        plan_task.responsible_role,
+                    ),
+                    current_status="PENDING",
+                    human_final_authority=True,
+                ),
             )
         )
 
@@ -236,6 +249,7 @@ def start_graph_node(
     *,
     graph_state: ProductionGraphState,
     node_id: str,
+    actor: AccountabilityActor | None = None,
 ) -> ProductionGraphState:
     node_map = {
         node.node_id: node
@@ -248,6 +262,14 @@ def start_graph_node(
         )
 
     node = node_map[node_id]
+
+    if actor is not None:
+        require_access(
+            actor=actor,
+            action="START",
+            accountability=node.accountability,
+            status=node.status,
+        )
 
     if node.status != "READY":
         raise ValueError(
@@ -287,6 +309,7 @@ def complete_graph_node(
     *,
     graph_state: ProductionGraphState,
     node_id: str,
+    actor: AccountabilityActor | None = None,
 ) -> ProductionGraphState:
     node_map = {
         node.node_id: node
@@ -299,6 +322,14 @@ def complete_graph_node(
         )
 
     node = node_map[node_id]
+
+    if actor is not None:
+        require_access(
+            actor=actor,
+            action="COMPLETE",
+            accountability=node.accountability,
+            status=node.status,
+        )
 
     if node.status != "RUNNING":
         raise ValueError(
