@@ -4,6 +4,11 @@ from typing import Any
 
 from .access import access_snapshot
 from .accountability import STUDIO_HEAD
+from .guidance import (
+    derive_node_guidance,
+    normalize_guidance_level,
+    production_guidance_summary,
+)
 from .identity import require_production_identity
 from .models import (
     AccountabilityActor,
@@ -70,7 +75,17 @@ def _graph_snapshot(
     graph_state: ProductionGraphState,
     node_intelligence: dict[str, Any],
     actor: AccountabilityActor,
+    guidance_level: str,
+    production_stage: str,
 ) -> dict[str, Any]:
+    guidance_items = [derive_node_guidance(
+        actor=actor, node=node, graph_state=graph_state,
+        artifact=(node_intelligence.get(node.node_id)
+                  if isinstance(node_intelligence.get(node.node_id), dict)
+                  else None),
+        guidance_level=guidance_level, production_stage=production_stage,
+    ) for node in graph_state.nodes]
+    guidance_by_node = {item.context["node_id"]: item for item in guidance_items}
     return {
         "ready_nodes": graph_state.ready_nodes,
         "running_nodes": graph_state.running_nodes,
@@ -90,6 +105,7 @@ def _graph_snapshot(
                 "approval_required": node.approval_required,
                 "stale_reason": node.stale_reason,
                 "artifact": node_intelligence.get(node.node_id),
+                "guidance": guidance_by_node[node.node_id].model_dump(mode="json"),
                 "ownership": {
                     "current_owner": (
                         node.accountability.ai_agent_responsible.model_dump(
@@ -115,6 +131,7 @@ def _graph_snapshot(
             }
             for node in graph_state.nodes
         ],
+        "guidance_summary": production_guidance_summary(guidance_items),
     }
 
 
@@ -124,7 +141,9 @@ def build_pending_studio_command_snapshot(
     graph_state: ProductionGraphState,
     review_bundle: dict[str, Any],
     actor: AccountabilityActor = STUDIO_HEAD,
+    guidance_level: str = "Standard",
 ) -> dict[str, Any]:
+    guidance_level = normalize_guidance_level(guidance_level)
     canonical_name = require_production_identity(
         production_name,
         graph_state.production_name,
@@ -133,6 +152,10 @@ def build_pending_studio_command_snapshot(
         review_bundle["studio_head_decision_package"]["production_name"],
     )
     node_intelligence = _node_intelligence(review_bundle, None)
+    graph_snapshot = _graph_snapshot(
+        graph_state, node_intelligence, actor, guidance_level,
+        "STUDIO_HEAD_REVIEW",
+    )
 
     return {
         "production_name": canonical_name,
@@ -144,7 +167,7 @@ def build_pending_studio_command_snapshot(
         "active_conditions": [],
         "preserved_artifacts": [],
         "stale_artifacts": [],
-        "graph": _graph_snapshot(graph_state, node_intelligence, actor),
+        "graph": graph_snapshot,
         "node_intelligence": node_intelligence,
         "access": _artifact_access(node_intelligence, actor),
         "accountability": {
@@ -154,6 +177,8 @@ def build_pending_studio_command_snapshot(
         },
         "production_package": None,
         "delivery": None,
+        "guidance_level": guidance_level,
+        "guidance": graph_snapshot["guidance_summary"],
     }
 
 
@@ -164,7 +189,9 @@ def build_studio_command_snapshot(
     final_package: FinalProductionPackage | None = None,
     approved_artifacts: dict[str, Any] | None = None,
     actor: AccountabilityActor = STUDIO_HEAD,
+    guidance_level: str = "Standard",
 ) -> dict[str, Any]:
+    guidance_level = normalize_guidance_level(guidance_level)
     require_production_identity(
         runtime_state.production_name,
         graph_state.production_name,
@@ -182,6 +209,10 @@ def build_studio_command_snapshot(
         else None
     )
     node_intelligence = _node_intelligence(approved_artifacts or {}, package_data)
+    graph_snapshot = _graph_snapshot(
+        graph_state, node_intelligence, actor, guidance_level,
+        runtime_state.current_stage,
+    )
 
     return {
         "production_name": runtime_state.production_name,
@@ -193,7 +224,7 @@ def build_studio_command_snapshot(
         "active_conditions": runtime_state.workflow_state.active_conditions,
         "preserved_artifacts": runtime_state.memory_snapshot.preserved_artifacts,
         "stale_artifacts": runtime_state.memory_snapshot.stale_artifacts,
-        "graph": _graph_snapshot(graph_state, node_intelligence, actor),
+        "graph": graph_snapshot,
         "node_intelligence": node_intelligence,
         "access": _artifact_access(node_intelligence, actor),
         "accountability": {
@@ -212,4 +243,6 @@ def build_studio_command_snapshot(
             if final_package is not None
             else None
         ),
+        "guidance_level": guidance_level,
+        "guidance": graph_snapshot["guidance_summary"],
     }

@@ -45,6 +45,36 @@ class AccountableArtifact(BaseModel):
     )
 
 
+GuidanceLevel = Literal["Guided", "Standard", "Expert"]
+
+
+class GuidanceAction(BaseModel):
+    action: str
+    action_type: str
+    target: str | None = None
+    authorized: bool
+    rationale: str
+    rationale_sources: List[str] = Field(default_factory=list)
+
+
+class RoleAwareGuidance(BaseModel):
+    """Derived presentation guidance; never grants workflow authority."""
+
+    guidance_level: GuidanceLevel = "Standard"
+    responsibility_now: str
+    context: Dict[str, object] = Field(default_factory=dict)
+    access: Dict[str, object] = Field(default_factory=dict)
+    blockers: List[str] = Field(default_factory=list)
+    waiting_on: List[str] = Field(default_factory=list)
+    missing_inputs: List[str] = Field(default_factory=list)
+    next_best_action: GuidanceAction
+    what_happens_next: str
+    escalation_required: bool = False
+    escalation_condition: str | None = None
+    escalation_target: str | None = None
+    detail: str | None = None
+
+
 class ProductionBrief(AccountableArtifact):
     production_title: str = Field(
         description="A concise working title for the production."

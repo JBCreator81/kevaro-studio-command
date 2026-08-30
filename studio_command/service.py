@@ -203,6 +203,7 @@ def live_studio_snapshot(
     production_name: str,
     actor_name: str = "Studio Head",
     actor_role: str = "Studio Head",
+    guidance_level: str = "Standard",
 ) -> Any:
     """Build UI state from pending review or the governed runtime."""
     from studio_command.graph import build_production_graph
@@ -245,6 +246,7 @@ def live_studio_snapshot(
                 graph_state=graph_state,
                 review_bundle=review_bundle,
                 actor=actor,
+                guidance_level=guidance_level,
             )
         except (KeyError, TypeError, ValueError) as exc:
             raise HTTPException(
@@ -293,6 +295,7 @@ def live_studio_snapshot(
         final_package=final_package,
         approved_artifacts=approved_artifacts,
         actor=actor,
+        guidance_level=guidance_level,
     )
 
 
