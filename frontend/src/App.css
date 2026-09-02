@@ -1832,6 +1832,17 @@ footer {
 .crew-session button { margin-top: .25rem; border: 0; background: transparent; text-align: left; cursor: pointer; }
 .sign-in-screen { gap: 1.1rem; text-align: center; }
 .sign-in-screen small { color: #8190a2; }
-.local-sign-in { display: flex; gap: .5rem; }
+.sign-in-action { width: min(100%, 28rem); }
+.google-sign-in-cta { width: 100%; min-height: 3.5rem; padding: .9rem 1.4rem; border: 1px solid rgba(129,190,255,.62); border-radius: .8rem; color: #07101c; background: linear-gradient(135deg,#f8fbff,#a8d5ff); box-shadow: 0 12px 40px rgba(68,143,255,.2); font: 700 .95rem/1.2 Inter,sans-serif; cursor: pointer; }
+.google-sign-in-cta:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 16px 46px rgba(68,143,255,.3); }
+.google-sign-in-cta:focus-visible { outline: 3px solid #75c7ff; outline-offset: 4px; }
+.google-sign-in-cta:disabled { cursor: not-allowed; opacity: .58; }
+.auth-status { min-height: 2.8em; margin: .75rem 0 0; color: #91a0b4; font-size: .78rem; line-height: 1.5; }
+.auth-status.error,.auth-status.unavailable { color: #ffadad; }
+.auth-status.success { color: #70e6b0; }
+.local-sign-in { display: grid; gap: .45rem; text-align: left; }
+.local-sign-in label { color: #aeb9c8; font-size: .75rem; }
+.local-sign-in>div { display: flex; gap: .5rem; }
 .local-sign-in input { min-width: 18rem; padding: .75rem; color: #fff; background: #0c121b; border: 1px solid rgba(255,255,255,.16); }
 .local-sign-in button, .ingress-button { cursor: pointer; }
+@media (max-width: 520px) { .local-sign-in>div { flex-direction: column; } .local-sign-in input { min-width: 0; width: 100%; } }

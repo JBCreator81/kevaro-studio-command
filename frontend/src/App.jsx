@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
+import GoogleCrewSignIn from "./GoogleCrewSignIn";
 
 const formatLabel = (value = "") =>
   String(value).replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -73,6 +74,7 @@ function App() {
   const [productionName, setProductionName] = useState("");
   const [currentCrew, setCurrentCrew] = useState(null);
   const [authConfig, setAuthConfig] = useState(null);
+  const [authConfigLoaded, setAuthConfigLoaded] = useState(false);
   const [localSubject, setLocalSubject] = useState("");
   const [signInRequired, setSignInRequired] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState("CONNECTING");
@@ -118,21 +120,8 @@ function App() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/auth/config").then((response) => response.ok ? response.json() : null).then(setAuthConfig).catch(() => setAuthConfig(null));
+    fetch("/api/auth/config").then((response) => response.ok ? response.json() : null).then(setAuthConfig).catch(() => setAuthConfig(null)).finally(() => setAuthConfigLoaded(true));
   }, []);
-
-  useEffect(() => {
-    if (authConfig?.provider !== "google" || !authConfig.google_client_id || !signInRequired) return;
-    const start = () => window.google?.accounts.id.initialize({
-      client_id: authConfig.google_client_id,
-      callback: async ({ credential }) => {
-        const response = await fetch("/api/auth/google", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ credential }) });
-        if (response.ok) window.location.reload(); else setError("Google account is not assigned to this production.");
-      },
-    });
-    if (window.google?.accounts) { start(); window.google.accounts.id.renderButton(document.getElementById("google-sign-in"), { theme: "filled_black", size: "large" }); return; }
-    const script = document.createElement("script"); script.src = "https://accounts.google.com/gsi/client"; script.async = true; script.onload = () => { start(); window.google.accounts.id.renderButton(document.getElementById("google-sign-in"), { theme: "filled_black", size: "large" }); }; document.head.appendChild(script);
-  }, [authConfig, signInRequired]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setIntroVisible(false), 2500);
@@ -187,8 +176,8 @@ function App() {
         <p className="eyebrow">Kevaro Studio Command · Authenticated Crew</p>
         <h1>Sign in to enter the production.</h1>
         <p>{productionName || "Governed production"} resolves your role, ownership, and review authority server-side.</p>
-        <div id="google-sign-in" />
-        {authConfig?.local_auth_enabled && <div className="local-sign-in"><input value={localSubject} onChange={(event) => setLocalSubject(event.target.value)} placeholder="Provisioned local auth subject" /><button type="button" onClick={localSignIn} disabled={!localSubject.trim()}>LOCAL TEST SIGN IN</button></div>}
+        <GoogleCrewSignIn config={authConfig} configLoaded={authConfigLoaded} />
+        {authConfig?.local_auth_enabled && <div className="local-sign-in"><label htmlFor="local-auth-subject">Provisioned local auth subject</label><div><input id="local-auth-subject" value={localSubject} onChange={(event) => setLocalSubject(event.target.value)} autoComplete="username" /><button type="button" onClick={localSignIn} disabled={!localSubject.trim()}>LOCAL TEST SIGN IN</button></div></div>}
         <small>Roles and Studio Head authority cannot be supplied by this browser.</small>
       </main>
     );

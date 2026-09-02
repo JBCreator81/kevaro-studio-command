@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -194,3 +195,40 @@ def test_session_secret_and_token_never_appear_in_public_or_serialized_data():
     serialized = json.dumps(config.public_status()) + repr(config) + json.dumps(member().model_dump(mode="json"))
     assert SECRET not in serialized
     assert token not in serialized
+
+
+def test_google_sign_in_is_explicit_and_reports_all_interaction_states():
+    source = (Path(__file__).parent / "frontend/src/GoogleCrewSignIn.jsx").read_text()
+    assert "Continue with Google" in source
+    assert 'type="button"' in source
+    assert "disabled=" in source
+    assert "aria-busy=" in source
+    for state in ("loading", "signing-in", "success", "error", "unavailable"):
+        assert state in source
+
+
+def test_missing_google_oauth_config_keeps_disabled_action_with_explanation():
+    source = (Path(__file__).parent / "frontend/src/GoogleCrewSignIn.jsx").read_text()
+    assert 'config?.provider !== "google" || !config.google_client_id' in source
+    assert "Google sign-in is temporarily unavailable" in source
+    assert 'role={displayState === "error" || displayState === "unavailable" ? "alert" : "status"}' in source
+
+
+def test_required_actions_follow_visible_semantic_control_rule():
+    rule = (Path(__file__).parent / "frontend/INTERACTION_RULES.md").read_text()
+    for action in ("Add Details", "Enter Information", "Register Asset", "External Tool Handoff", "Submit Change", "Review", "Approve", "Request Changes"):
+        assert action in rule
+    assert "visible, semantic CTA or labeled form control" in rule
+    assert "placeholder-only instructions" in rule
+
+
+def test_google_auth_accepts_identity_credential_only_and_fails_closed_without_config(monkeypatch):
+    service, client = configure(monkeypatch, CrewStore([member()]))
+    unavailable = client.post("/api/auth/google", json={"credential": "google-token"})
+    assert unavailable.status_code == 503
+    bypass = client.post(
+        "/api/auth/google",
+        json={"credential": "google-token", "actor_role": "Studio Head", "studio_head": True},
+    )
+    assert bypass.status_code == 503
+    assert set(service.SignInRequest.model_fields) == {"credential"}
