@@ -327,6 +327,26 @@ class ParallelSearchProvenance(BaseModel):
     unavailable_reason: str | None = None
 
 
+class ParallelSearchResultRecord(BaseModel):
+    """Exact secret-safe source metadata returned by one Parallel call."""
+    title: str | None = None
+    url: str | None = None
+    source: str | None = None
+    citation_id: str | None = None
+    excerpts: List[str] = Field(default_factory=list)
+    publish_date: str | None = None
+
+
+class ParallelSearchCallRecord(BaseModel):
+    """One ordered Parallel call bound to a governed research invocation."""
+    call_index: int
+    research_run_id: str | None = None
+    production_identity: str
+    function_call_id: str | None = None
+    provenance: ParallelSearchProvenance
+    results: List[ParallelSearchResultRecord] = Field(default_factory=list)
+
+
 class ResearchPacket(AccountableArtifact):
     evidence: List[ResearchEvidence] = Field(
         description="Evidence records produced for the Production Brief research questions."
@@ -342,6 +362,12 @@ class ResearchPacket(AccountableArtifact):
     parallel_provenance: ParallelSearchProvenance | None = Field(
         default=None,
         description="Exact non-secret Parallel runtime provenance; absent on legacy packets.",
+    )
+    parallel_search_calls: List[ParallelSearchCallRecord] = Field(
+        default_factory=list,
+        description=(
+            "Ordered, complete provenance for every Parallel call in this research run."
+        ),
     )
     evidence_gaps: List[str] = Field(default_factory=list)
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import urlparse
 
 from .access import access_snapshot
 from .accountability import STUDIO_HEAD
@@ -37,6 +38,20 @@ def _secret_safe_evidence(value: Any) -> Any:
     return value
 
 
+def _safe_external_url(value: Any) -> str | None:
+    """Return only absolute HTTP(S) citation URLs supplied by the runtime."""
+    if not isinstance(value, str):
+        return None
+    candidate = value.strip()
+    try:
+        parsed = urlparse(candidate)
+    except ValueError:
+        return None
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+        return None
+    return candidate
+
+
 def _parallel_evidence_summary(research_packet: Any) -> dict[str, Any]:
     """Derive concise, secret-safe judge proof from current or legacy research."""
     if not isinstance(research_packet, dict):
@@ -44,34 +59,82 @@ def _parallel_evidence_summary(research_packet: Any) -> dict[str, Any]:
             "provider": "Parallel", "status": "NOT_RUN",
             "grounded_source_count": 0,
             "evidence_gaps": ["Research evidence was not recorded."],
-            "most_relevant_citations": [], "last_invocation_at": None,
+            "findings": [], "most_relevant_citations": [],
+            "last_invocation_at": None,
             "invocation_marker": None,
         }
     provenance = research_packet.get("parallel_provenance")
     provenance = provenance if isinstance(provenance, dict) else {}
-    status = provenance.get("verification_status")
+    call_history = [
+        call for call in (research_packet.get("parallel_search_calls") or [])
+        if isinstance(call, dict) and isinstance(call.get("provenance"), dict)
+    ]
+    call_provenances = [call["provenance"] for call in call_history]
+    if call_provenances:
+        statuses = {
+            item.get("verification_status") for item in call_provenances
+        }
+        status = "VERIFIED" if statuses == {"VERIFIED"} else "UNAVAILABLE"
+        search_queries = [
+            query for item in call_provenances
+            for query in (item.get("search_queries") or [])
+        ]
+        invocation_times = [
+            item.get("invoked_at") for item in call_provenances
+            if item.get("invoked_at")
+        ]
+        last_invocation_at = (
+            max(invocation_times) if invocation_times else None
+        )
+    else:
+        status = provenance.get("verification_status")
+        search_queries = provenance.get("search_queries") or []
+        last_invocation_at = provenance.get("invoked_at")
     if status not in {"VERIFIED", "UNAVAILABLE", "NOT_RUN"}:
         status = "UNAVAILABLE" if research_packet else "NOT_RUN"
-    citations, seen_urls = [], set()
+    citations, findings, seen_sources = [], [], set()
     records = research_packet.get("evidence") or []
     for evidence in records:
         if not isinstance(evidence, dict):
             continue
+        finding_sources = []
         for source in evidence.get("sources") or []:
             if not isinstance(source, dict):
                 continue
-            url = source.get("url")
-            if not isinstance(url, str) or not url or url in seen_urls:
+            url = _safe_external_url(source.get("url"))
+            source_key = (
+                source.get("citation_id"), url, source.get("title"),
+                source.get("publisher_or_domain"),
+            )
+            if not any(source_key) or source_key in seen_sources:
                 continue
-            seen_urls.add(url)
-            citations.append({
+            seen_sources.add(source_key)
+            citation = {
                 "citation_id": source.get("citation_id"),
                 "title": source.get("title"), "url": url,
                 "source": source.get("publisher_or_domain"),
+                "evidence_summary": source.get("evidence_summary"),
                 "finding": evidence.get("finding"),
                 "confidence": source.get("confidence"),
                 "relevance": source.get("production_relevance"),
-            })
+                "publish_date": source.get("publish_date"),
+                "provider": source.get("provider"),
+                "retrieval_metadata": source.get("retrieval_metadata") or {},
+            }
+            citations.append(citation)
+            finding_sources.append(citation)
+        findings.append({
+            "research_question": evidence.get("research_question"),
+            "finding": evidence.get("finding"),
+            "production_impact": evidence.get("production_impact"),
+            "unresolved_questions": list(
+                evidence.get("unresolved_questions") or []
+            ),
+            "requires_studio_head_decision": evidence.get(
+                "requires_studio_head_decision"
+            ),
+            "sources": finding_sources,
+        })
     gaps = list(research_packet.get("evidence_gaps") or [])
     for evidence in records:
         if isinstance(evidence, dict):
@@ -81,14 +144,36 @@ def _parallel_evidence_summary(research_packet: Any) -> dict[str, Any]:
     return {
         "provider": "Parallel", "status": status,
         "query": {"objective": provenance.get("objective"),
-                  "search_queries": provenance.get("search_queries") or []},
-        "grounded_source_count": len(seen_urls), "evidence_gaps": gaps,
+                  "search_queries": search_queries},
+        "grounded_source_count": len(citations), "evidence_gaps": gaps,
+        "findings": findings,
         "most_relevant_citations": citations[:5],
-        "last_invocation_at": provenance.get("invoked_at"),
+        "last_invocation_at": last_invocation_at,
         "invocation_marker": provenance.get("invocation_marker"),
         "production_identity": provenance.get("production_identity"),
         "research_node": provenance.get("research_node") or "Research",
         "search_id": provenance.get("search_id"),
+        "search_calls": [
+            {
+                "call_index": call.get("call_index"),
+                "research_run_id": call.get("research_run_id"),
+                "production_identity": call.get("production_identity"),
+                "provider": call["provenance"].get("provider"),
+                "verification_status": call["provenance"].get(
+                    "verification_status"
+                ),
+                "objective": call["provenance"].get("objective"),
+                "search_queries": call["provenance"].get("search_queries") or [],
+                "invoked_at": call["provenance"].get("invoked_at"),
+                "search_id": call["provenance"].get("search_id"),
+                "citation_ids": [
+                    result.get("citation_id")
+                    for result in (call.get("results") or [])
+                    if isinstance(result, dict) and result.get("citation_id")
+                ],
+            }
+            for call in call_history
+        ],
     }
 
 
@@ -229,6 +314,7 @@ def build_pending_studio_command_snapshot(
     node_intelligence = _node_intelligence(review_bundle, None)
     evidence_summary = _parallel_evidence_summary(node_intelligence.get("Research"))
     evidence_summary["production_identity"] = canonical_name
+    node_evidence = {"Research": evidence_summary}
     graph_snapshot = _graph_snapshot(
         graph_state, node_intelligence, actor, guidance_level,
         "STUDIO_HEAD_REVIEW",
@@ -262,6 +348,7 @@ def build_pending_studio_command_snapshot(
         "graph": graph_snapshot,
         "node_intelligence": node_intelligence,
         "evidence_summary": evidence_summary,
+        "node_evidence": node_evidence,
         "access": _artifact_access(node_intelligence, actor),
         "accountability": {
             name: value.get("accountability")
@@ -311,6 +398,7 @@ def build_studio_command_snapshot(
     node_intelligence = _node_intelligence(approved_artifacts or {}, package_data)
     evidence_summary = _parallel_evidence_summary(node_intelligence.get("Research"))
     evidence_summary["production_identity"] = runtime_state.production_name
+    node_evidence = {"Research": evidence_summary}
     graph_snapshot = _graph_snapshot(
         graph_state, node_intelligence, actor, guidance_level,
         runtime_state.current_stage,
@@ -344,6 +432,7 @@ def build_studio_command_snapshot(
         "graph": graph_snapshot,
         "node_intelligence": node_intelligence,
         "evidence_summary": evidence_summary,
+        "node_evidence": node_evidence,
         "access": _artifact_access(node_intelligence, actor),
         "accountability": {
             name: value.get("accountability")

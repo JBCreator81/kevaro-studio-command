@@ -300,6 +300,20 @@ class ProductionPersistence:
                 "Pending Studio Head review bundle has invalid production identity."
             ) from exc
 
+        from .graph import build_production_graph
+        from .models import ProductionPlan, ProductionSchedule
+
+        production_plan = ProductionPlan.model_validate(
+            review_bundle["production_plan"]
+        )
+        production_schedule = ProductionSchedule.model_validate(
+            review_bundle["production_schedule"]
+        )
+        build_production_graph(
+            production_plan=production_plan,
+            production_schedule=production_schedule,
+        )
+
         firestore_safe_review_bundle = _firestore_encode(
             jsonable_encoder(review_bundle)
         )

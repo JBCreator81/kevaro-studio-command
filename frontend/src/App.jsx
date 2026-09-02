@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import GoogleCrewSignIn from "./GoogleCrewSignIn";
+import EvidenceDetails from "./EvidenceDetails";
 
 const formatLabel = (value = "") =>
   String(value).replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -203,7 +204,8 @@ function App() {
   }
 
   const delivery = snapshot.delivery;
-  const evidence = snapshot.evidence_summary || {};
+  const evidence =
+    snapshot.node_evidence?.Research || snapshot.evidence_summary || {};
   const guidance = snapshot.guidance || {};
   const assetWorkflow = snapshot.production_assets || { assets: [], asset_count: 0, approved_asset_count: 0, missing_deliverables: [] };
   const activeNodeId = snapshot.graph.running_nodes?.[0] || snapshot.graph.ready_nodes?.[0] || (snapshot.graph.graph_complete ? "Final Package" : null);
@@ -713,6 +715,15 @@ function App() {
                 ))}</div>
               </div>
             )}
+            {selectedNode.node_id === "Research" && (
+              <EvidenceDetails
+                evidence={evidence}
+                compact
+                formatLabel={formatLabel}
+                statusTone={statusTone}
+                StatusPill={StatusPill}
+              />
+            )}
 
             {selectedNode.stale_reason && (
               <div className="node-intelligence-reason">
@@ -790,10 +801,12 @@ function App() {
       </section>
 
       <section className="evidence-room">
-        <div className="evidence-heading"><div><p className="eyebrow">Parallel Evidence Room</p><h2>Evidence that can be inspected, not merely trusted.</h2></div><StatusPill tone={statusTone(evidence.status)}>{evidence.provider || "Parallel"} · {formatLabel(evidence.status || "Not Recorded")}</StatusPill></div>
-        <div className="evidence-stats"><article><small>RESEARCH QUERY</small><strong>{evidence.query?.objective || evidence.query?.search_queries?.[0] || "No query recorded in this snapshot"}</strong></article><article><small>GROUNDED SOURCES</small><strong>{evidence.grounded_source_count ?? 0}</strong></article><article><small>LAST EVIDENCE REFRESH</small><strong>{evidence.last_invocation_at ? new Date(evidence.last_invocation_at).toLocaleString() : "Not recorded"}</strong></article><article><small>EVIDENCE GAPS</small><strong>{evidence.evidence_gaps?.length || 0}</strong></article></div>
-        <div className="citation-list">{evidence.most_relevant_citations?.length ? evidence.most_relevant_citations.map((citation, index) => (<a href={citation.url} target="_blank" rel="noreferrer" key={citation.url}><span>{citation.citation_id || String(index + 1).padStart(2, "0")}</span><div><strong>{citation.title || citation.source || "Grounded source"}</strong><small>{citation.relevance || citation.finding || "Parallel-sourced evidence"}</small></div><b>↗</b></a>)) : <p className="empty-proof">No citations are present in this snapshot. Kevaro does not fabricate evidence.</p>}</div>
-        {!!evidence.evidence_gaps?.length && <div className="evidence-gaps"><small>OPEN EVIDENCE GAPS</small><p>{evidence.evidence_gaps.join(" · ")}</p></div>}
+        <EvidenceDetails
+          evidence={evidence}
+          formatLabel={formatLabel}
+          statusTone={statusTone}
+          StatusPill={StatusPill}
+        />
       </section>
 
       <section className="asset-ingress">

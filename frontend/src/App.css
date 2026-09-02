@@ -1846,3 +1846,8 @@ footer {
 .local-sign-in input { min-width: 18rem; padding: .75rem; color: #fff; background: #0c121b; border: 1px solid rgba(255,255,255,.16); }
 .local-sign-in button, .ingress-button { cursor: pointer; }
 @media (max-width: 520px) { .local-sign-in>div { flex-direction: column; } .local-sign-in input { min-width: 0; width: 100%; } }
+.evidence-findings{display:grid;gap:8px;margin-top:12px}
+.evidence-findings article{padding:14px;border:1px solid #ffffff0f;border-radius:10px}
+.evidence-findings strong,.evidence-findings p{display:block;margin-top:6px}
+.citation-list a,.citation-unlinked{display:grid;grid-template-columns:34px 1fr auto;gap:12px;padding:13px;border:1px solid #ffffff0d;border-radius:10px;color:inherit;text-decoration:none}
+.citation-list a div,.citation-unlinked div{display:flex;flex-direction:column;gap:4px}.citation-unlinked{opacity:.72}.evidence-details-compact{margin-top:18px;padding-top:18px;border-top:1px solid #ffffff12}.evidence-details-compact .evidence-heading h2{font-size:20px}

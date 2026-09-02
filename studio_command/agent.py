@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 from google.adk.workflow import FunctionNode
 from google.adk.events import Event
 from google.adk.agents import Agent, SequentialAgent
@@ -129,7 +131,14 @@ OPERATING RULES
 
 1. Every task must produce a concrete deliverable or unblock downstream work.
 
-2. Identify true dependencies accurately.
+2. CANONICAL TASK DEPENDENCIES
+Identify true dependencies accurately. Every dependency value must exactly match
+the task_name of another task in this same ProductionPlan. Production Brief,
+Research Packet, Creative Treatment, approvals, evidence, assets, and other
+workflow artifacts or stages are inputs to planning, not task identities. Do not
+put them in task dependencies unless an actual ProductionTask with that exact
+task_name exists. A task with no prior production task dependency must use an
+empty dependencies list.
 
 3. GRAPH, NOT CHAIN
 Group work that can safely happen at the same time into parallel workstreams.
@@ -178,6 +187,9 @@ The ProductionPlan is the authoritative definition of the work to be scheduled.
 
 1. DEPENDENCIES FIRST
 Never schedule a task before its true dependencies or approval gates are satisfied.
+Every depends_on value must exactly match a task_name present in
+ProductionPlan.tasks. Do not use upstream workflow artifact or stage labels such
+as Production Brief as scheduled-task dependencies.
 
 2. GRAPH, NOT CHAIN
 Preserve legitimate parallel workstreams.
@@ -657,6 +669,23 @@ legacy_root_agent = SequentialAgent(
 )
 
 
+def _serialize_research_handoff(ctx, node_input):
+    """Keep typed research internally and emit JSON-safe workflow state."""
+    value = ctx.state.get("research_packet")
+    if value is None:
+        value = node_input
+    research_packet = ResearchPacket.model_validate(value)
+    serialized = research_packet.model_dump(mode="json")
+    ctx.state["research_packet"] = serialized
+    return serialized
+
+
+serialize_research_handoff = FunctionNode(
+    name="serialize_research_handoff",
+    func=_serialize_research_handoff,
+)
+
+
 production_planning_join = JoinNode(
     name="production_planning_join",
     description=(
@@ -719,24 +748,180 @@ _PENDING_REVIEW_KEYS = (
 )
 
 
+def _govern_research_packet(
+    research_packet,
+    parallel_search_result=None,
+    *,
+    parallel_search_calls=None,
+    research_run_id=None,
+    production_name=None,
+):
+    """Bind every research citation to an ordered captured Parallel call."""
+    packet = _review_value(research_packet)
+    if not isinstance(packet, dict):
+        raise ValueError("Research packet must be a structured object.")
+
+    calls = list(parallel_search_calls or [])
+    if not calls and isinstance(parallel_search_result, dict):
+        calls = [{
+            "function_call_id": None,
+            "research_run_id": research_run_id,
+            "result": parallel_search_result,
+        }]
+    if not calls:
+        packet["parallel_provenance"] = None
+        packet["parallel_search_calls"] = []
+        return packet
+
+    retained_calls = []
+    by_citation = {}
+    for call_index, call in enumerate(calls, start=1):
+        if not isinstance(call, dict):
+            raise ValueError("Parallel call history contains an invalid record.")
+        call_run_id = call.get("research_run_id")
+        if research_run_id and call_run_id != research_run_id:
+            raise ValueError(
+                "Parallel call belongs to a different governed research run."
+            )
+        call_production = call.get("production_identity")
+        if (
+            production_name and call_production
+            and call_production != production_name
+        ):
+            raise ValueError(
+                "Parallel call belongs to a different production."
+            )
+        result = call.get("result")
+        provenance = result.get("provenance") if isinstance(result, dict) else None
+        results = result.get("results") if isinstance(result, dict) else None
+        if not isinstance(provenance, dict) or not isinstance(results, list):
+            raise ValueError("Parallel call history lacks structured provenance.")
+        retained_calls.append({
+            "call_index": call_index,
+            "research_run_id": call_run_id,
+            "production_identity": production_name,
+            "function_call_id": call.get("function_call_id"),
+            "provenance": provenance,
+            "results": results,
+        })
+        for item in results:
+            if not isinstance(item, dict) or not item.get("citation_id"):
+                continue
+            citation_id = item["citation_id"]
+            prior = by_citation.get(citation_id)
+            if prior and prior[0] != item:
+                raise ValueError(
+                    f"Parallel citation identifier is ambiguous: {citation_id}."
+                )
+            by_citation[citation_id] = (item, provenance, call_index)
+
+    for evidence in packet.get("evidence") or []:
+        if not isinstance(evidence, dict):
+            raise ValueError("Research evidence must be a structured object.")
+        for source in evidence.get("sources") or []:
+            if not isinstance(source, dict):
+                raise ValueError("Research source must be a structured object.")
+            citation_id = source.get("citation_id")
+            captured = by_citation.get(citation_id)
+            if captured is None:
+                raise ValueError(
+                    "Research source is not present in any captured Parallel call: "
+                    f"{citation_id or 'missing citation identifier'}"
+                )
+            captured, provenance, call_index = captured
+            if provenance.get("verification_status") != "VERIFIED":
+                raise ValueError(
+                    f"Research citation {citation_id} lacks verified provenance."
+                )
+            if source.get("url") != captured.get("url"):
+                raise ValueError(
+                    f"Research source URL does not match captured citation {citation_id}."
+                )
+            source.update({
+                "title": captured.get("title"),
+                "url": captured.get("url"),
+                "publisher_or_domain": captured.get("source"),
+                "citation_id": captured.get("citation_id"),
+                "excerpts": captured.get("excerpts") or [],
+                "publish_date": captured.get("publish_date"),
+                "provider": provenance.get("provider"),
+            })
+            retrieval_metadata = {
+                **(source.get("retrieval_metadata") or {}),
+                "parallel_call_index": call_index,
+            }
+            if provenance.get("search_id"):
+                retrieval_metadata["parallel_search_id"] = provenance["search_id"]
+            source["retrieval_metadata"] = retrieval_metadata
+
+    packet["parallel_provenance"] = retained_calls[-1]["provenance"]
+    packet["parallel_search_calls"] = (
+        retained_calls if production_name else []
+    )
+    return packet
+
+
+def _validate_review_bundle_graph(review_bundle):
+    from .graph import build_production_graph
+
+    plan = ProductionPlan.model_validate(review_bundle["production_plan"])
+    schedule = ProductionSchedule.model_validate(
+        review_bundle["production_schedule"]
+    )
+    build_production_graph(
+        production_plan=plan,
+        production_schedule=schedule,
+    )
+
+
 def _review_value(value):
     if hasattr(value, "model_dump"):
         return value.model_dump(mode="json")
     return value
 
 
+def _project_governed_state(state, *, keys=(), prefixes=()):
+    """Read an allowlisted projection from ADK State or a plain mapping."""
+    to_dict = getattr(state, "to_dict", None)
+    if callable(to_dict):
+        snapshot = to_dict()
+    elif isinstance(state, Mapping):
+        snapshot = state
+    else:
+        snapshot = {
+            key: state[key]
+            for key in keys
+            if key in state
+        }
+    projected = {
+        key: snapshot[key]
+        for key in keys
+        if key in snapshot
+    }
+    if prefixes:
+        projected.update({
+            key: value
+            for key, value in snapshot.items()
+            if any(key.startswith(prefix) for prefix in prefixes)
+        })
+    return projected
+
+
 def _persist_pending_review_bundle(ctx, node_input):
-    review_bundle = {}
+    review_bundle = _project_governed_state(
+        ctx.state,
+        keys=_PENDING_REVIEW_KEYS,
+    )
 
     for key in _PENDING_REVIEW_KEYS:
-        value = ctx.state.get(key)
+        value = review_bundle.get(key)
 
         if value is None:
             raise ValueError(
                 f"Cannot persist Studio Head review bundle. Missing workflow state: {key}"
             )
 
-        review_bundle[key] = _review_value(value)
+        review_bundle[key] = _review_value(review_bundle[key])
 
     review_bundle = add_pending_accountability(review_bundle)
     decision_package = review_bundle["studio_head_decision_package"]
@@ -753,6 +938,25 @@ def _persist_pending_review_bundle(ctx, node_input):
         review_bundle["production_schedule"]["production_name"],
     )
 
+    parallel_state = _project_governed_state(
+        ctx.state,
+        keys=("parallel_search_result",),
+        prefixes=("parallel_search_call:",),
+    )
+    parallel_search_calls = [
+        value
+        for key, value in parallel_state.items()
+        if key.startswith("parallel_search_call:")
+    ]
+    review_bundle["research_packet"] = _govern_research_packet(
+        review_bundle["research_packet"],
+        parallel_state.get("parallel_search_result"),
+        parallel_search_calls=parallel_search_calls,
+        research_run_id=ctx.invocation_id,
+        production_name=production_name,
+    )
+
+    _validate_review_bundle_graph(review_bundle)
     production_persistence.save_pending_review_bundle(
         production_name=production_name,
         review_bundle=review_bundle,
@@ -784,6 +988,7 @@ studio_production_workflow = Workflow(
             "START",
             executive_producer_agent,
             research_agent,
+            serialize_research_handoff,
             creative_development_agent,
             production_manager_agent,
             (

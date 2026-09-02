@@ -130,7 +130,8 @@ routes = {
 
 required_routes = {
     ("executive_producer", "research_agent"),
-    ("research_agent", "creative_development_agent"),
+    ("research_agent", "serialize_research_handoff"),
+    ("serialize_research_handoff", "creative_development_agent"),
     ("creative_development_agent", "production_manager_agent"),
     ("production_manager_agent", "scheduling_agent"),
     ("production_manager_agent", "asset_media_agent"),
