@@ -395,13 +395,33 @@ def ready() -> dict[str, Any]:
 
 @app.get("/api/studio-snapshot")
 def studio_snapshot() -> Any:
+    try:
+        select_current = getattr(
+            production_persistence, "current_governed_production_name", None
+        )
+        production_name = select_current() if select_current is not None else None
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="Current governed production identity is invalid.",
+        ) from exc
+
+    if production_name is not None:
+        return {
+            "production_name": production_name,
+            "bootstrap_source": "GOVERNED_RUNTIME",
+        }
+
     if not SNAPSHOT_PATH.exists():
         raise HTTPException(
             status_code=503,
             detail="Studio Command snapshot is unavailable.",
         )
 
-    return json.loads(SNAPSHOT_PATH.read_text())
+    snapshot = json.loads(SNAPSHOT_PATH.read_text())
+    canonical_production_name(snapshot["production_name"])
+    snapshot["bootstrap_source"] = "STATIC_FALLBACK"
+    return snapshot
 
 
 @app.get("/api/productions/{production_name}/studio-snapshot")

@@ -130,6 +130,78 @@ class ProductionPersistence:
         document_id = sha256(auth_subject.encode("utf-8")).hexdigest()
         return self.firestore_client.collection(self.config.crew_collection).document(document_id)
 
+    def current_governed_production_name(self) -> str | None:
+        """Return the latest complete governed runtime identity, if one exists."""
+        required_runtime_fields = {
+            "production_name",
+            "workflow_state",
+            "decision_history",
+            "memory_snapshot",
+            "execution_authorized",
+            "corrective_cycle_active",
+            "current_stage",
+        }
+        candidates: list[tuple[Any, str]] = []
+
+        for snapshot in self.firestore_client.collection(
+            self.config.productions_collection
+        ).stream():
+            payload = snapshot.to_dict()
+            if not isinstance(payload, dict):
+                continue
+
+            approved_artifacts = payload.get("approved_artifacts")
+            if not (
+                isinstance(approved_artifacts, dict)
+                and "studio_head_decision_package" in approved_artifacts
+            ):
+                continue
+            if not required_runtime_fields.issubset(payload):
+                raise ValueError("Persisted governed production state is incomplete.")
+
+            runtime_state = GovernedProductionRuntimeState.model_validate(
+                _firestore_decode(payload)
+            )
+            canonical_name = _runtime_identity(runtime_state)
+            expected_document_id = sha256(
+                canonical_name.encode("utf-8")
+            ).hexdigest()
+            if snapshot.id != expected_document_id:
+                raise ValueError(
+                    "Persisted governed production identity is not canonical."
+                )
+
+            decoded_artifacts = _firestore_decode(approved_artifacts)
+            try:
+                require_production_identity(
+                    canonical_name,
+                    decoded_artifacts["production_plan"]["production_name"],
+                    decoded_artifacts["production_schedule"]["production_name"],
+                    decoded_artifacts["studio_head_decision_package"]["production_name"],
+                )
+            except (KeyError, TypeError) as exc:
+                raise ValueError(
+                    "Persisted governed production artifacts have invalid identity."
+                ) from exc
+
+            update_time = getattr(snapshot, "update_time", None)
+            if update_time is None:
+                raise ValueError(
+                    "Persisted governed production recency is unavailable."
+                )
+            candidates.append((update_time, canonical_name))
+
+        if not candidates:
+            return None
+
+        latest_time = max(item[0] for item in candidates)
+        latest_names = {
+            name for update_time, name in candidates if update_time == latest_time
+        }
+        if len(latest_names) != 1:
+            raise ValueError("Current governed production identity is ambiguous.")
+        return latest_names.pop()
+
     def save_crew_member(self, member: CrewMember) -> None:
         """Provision crew authorization; public sign-in never writes this record."""
         self._crew_document(member.auth_subject).set(
