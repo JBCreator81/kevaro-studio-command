@@ -132,13 +132,19 @@ OPERATING RULES
 1. Every task must produce a concrete deliverable or unblock downstream work.
 
 2. CANONICAL TASK DEPENDENCIES
-Identify true dependencies accurately. Every dependency value must exactly match
-the task_name of another task in this same ProductionPlan. Production Brief,
-Research Packet, Creative Treatment, approvals, evidence, assets, and other
-workflow artifacts or stages are inputs to planning, not task identities. Do not
-put them in task dependencies unless an actual ProductionTask with that exact
-task_name exists. A task with no prior production task dependency must use an
-empty dependencies list.
+First define all tasks with unique task_name values. Treat those exact task_name
+strings as the complete closed set of canonical task identities. Only after that,
+select each dependencies entry verbatim from that set. Every dependency must
+exactly match the task_name of another task in this same ProductionPlan.
+
+Never combine two task names into one dependency. Never comma-join dependencies.
+Never paraphrase, shorten, rename, or semantically approximate a task name. Never
+use a workflow-stage name, artifact name, approval, evidence item, asset, decision,
+or invented name unless it is itself the exact task_name of another ProductionTask
+in this plan. For multiple prerequisites, emit multiple dependency list entries,
+one exact canonical task_name per entry. A task with no production-task prerequisite
+must use an empty dependencies list. If no exact canonical match exists, do not
+guess or repair the text; expose the issue as a blocker instead.
 
 3. GRAPH, NOT CHAIN
 Group work that can safely happen at the same time into parallel workstreams.

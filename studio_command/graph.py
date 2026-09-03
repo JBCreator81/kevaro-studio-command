@@ -12,11 +12,44 @@ from .models import (
 )
 
 
+def validate_production_plan_dependencies(
+    production_plan: ProductionPlan,
+) -> None:
+    """Validate canonical task identities before projecting them into a graph."""
+    task_names = [task.task_name for task in production_plan.tasks]
+    duplicate_names = sorted({
+        task_name
+        for task_name in task_names
+        if task_names.count(task_name) > 1
+    })
+    if duplicate_names:
+        raise ValueError(
+            "ProductionPlan contains duplicate canonical task identities: "
+            f"{duplicate_names}"
+        )
+
+    canonical_names = set(task_names)
+    for task in production_plan.tasks:
+        unknown_dependencies = [
+            dependency
+            for dependency in task.dependencies
+            if dependency not in canonical_names
+        ]
+        if unknown_dependencies:
+            raise ValueError(
+                f"Task {task.task_name} references unknown dependencies that do not "
+                "exactly match canonical ProductionPlan task identities: "
+                f"{unknown_dependencies}"
+            )
+
+
 def build_production_graph(
     *,
     production_plan: ProductionPlan,
     production_schedule: ProductionSchedule,
 ) -> ProductionGraphState:
+    validate_production_plan_dependencies(production_plan)
+
     if production_plan.production_name != production_schedule.production_name:
         raise ValueError(
             "Production plan and schedule must belong to the same production."
@@ -57,7 +90,7 @@ def build_production_graph(
 
         if missing_dependencies:
             raise ValueError(
-                f"Task {task_name} references unknown dependencies: "
+                f"Scheduled task {task_name} references unknown dependencies: "
                 f"{missing_dependencies}"
             )
 

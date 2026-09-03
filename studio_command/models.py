@@ -458,7 +458,14 @@ class ProductionTask(BaseModel):
     )
 
     dependencies: List[str] = Field(
-        description="Tasks, approvals, assets, evidence, or decisions required before this task can proceed."
+        description=(
+            "Exact task_name values of other ProductionTask entries in this same "
+            "ProductionPlan. Each dependency is one separate list entry. Never "
+            "combine, comma-join, paraphrase, shorten, rename, approximate, or "
+            "invent task identities, and never use workflow-stage names unless "
+            "they are exact task_name values. Use an empty list when no task "
+            "dependency exists."
+        )
     )
 
     completion_criteria: List[str] = Field(
@@ -484,7 +491,11 @@ class ProductionPlan(AccountableArtifact):
     )
 
     tasks: List[ProductionTask] = Field(
-        description="Ordered production tasks required to complete the project."
+        description=(
+            "Ordered production tasks required to complete the project. Every "
+            "task_name is a unique canonical identity used verbatim by dependency "
+            "entries in this plan."
+        )
     )
 
     critical_path: List[str] = Field(
