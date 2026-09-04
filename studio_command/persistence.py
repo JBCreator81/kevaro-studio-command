@@ -151,10 +151,24 @@ class ProductionPersistence:
                 continue
 
             approved_artifacts = payload.get("approved_artifacts")
-            if not (
-                isinstance(approved_artifacts, dict)
-                and "studio_head_decision_package" in approved_artifacts
-            ):
+            if not isinstance(approved_artifacts, dict):
+                continue
+            decision_key = next(
+                (
+                    key
+                    for key in ("decision_package", "studio_head_decision_package")
+                    if key in approved_artifacts
+                ),
+                None,
+            )
+            if decision_key is None:
+                continue
+            required_artifact_fields = {
+                "production_plan",
+                "production_schedule",
+                decision_key,
+            }
+            if not required_artifact_fields.issubset(approved_artifacts):
                 continue
             if not required_runtime_fields.issubset(payload):
                 raise ValueError("Persisted governed production state is incomplete.")
@@ -177,7 +191,7 @@ class ProductionPersistence:
                     canonical_name,
                     decoded_artifacts["production_plan"]["production_name"],
                     decoded_artifacts["production_schedule"]["production_name"],
-                    decoded_artifacts["studio_head_decision_package"]["production_name"],
+                    decoded_artifacts[decision_key]["production_name"],
                 )
             except (KeyError, TypeError) as exc:
                 raise ValueError(

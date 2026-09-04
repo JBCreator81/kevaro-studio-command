@@ -137,6 +137,13 @@ class AssetReviewRequest(BaseModel):
     comparison_version_id: str | None = None
 
 
+class StudioHeadDecisionRequest(BaseModel):
+    decision: str
+    conditions: list[str] = Field(default_factory=list)
+    decision_notes: str = ""
+    unresolved_risks_acknowledged: list[str] = Field(default_factory=list)
+
+
 def _requires_crew_session(request: Request) -> bool:
     path = request.url.path
     if path == "/api/reality-shift":
@@ -747,13 +754,9 @@ if FRONTEND_DIST.exists():
 
 @app.post("/api/productions/{production_name}/decision")
 def studio_head_decision(
-    production_name: str, request: Request,
-    decision: str,
-    conditions: list[str] | None = None,
-    decision_notes: str = "",
-    decided_by: str = "Studio Head",
-    unresolved_risks_acknowledged: list[str] | None = None,
-    actor_role: str = "Studio Head",
+    production_name: str,
+    decision_request: StudioHeadDecisionRequest,
+    request: Request,
 ) -> dict[str, Any]:
     identity = _crew_identity(request, production_name)
     decided_by = identity.member.display_name
@@ -831,12 +834,14 @@ def studio_head_decision(
 
         runtime_state = approve_governed_production(
             production_name=production_name,
-            decision=decision,
-            conditions=conditions or [],
-            decision_notes=decision_notes,
+            decision=decision_request.decision,
+            conditions=decision_request.conditions,
+            decision_notes=decision_request.decision_notes,
             decided_by=decided_by,
             decision_package=decision_package,
-            unresolved_risks_acknowledged=unresolved_risks_acknowledged or [],
+            unresolved_risks_acknowledged=(
+                decision_request.unresolved_risks_acknowledged
+            ),
             approved_artifacts=approved_artifacts,
             preserved_artifacts=list(approved_artifacts.keys()),
             persistence=production_persistence,

@@ -35,6 +35,7 @@ def _replace_identity(value, production_name):
 def _governed_payload(production_name=GOVERNED_PRODUCTION):
     payload = _replace_identity(runtime.model_dump(mode="json"), production_name)
     bundle = _replace_identity(review_bundle(), production_name)
+    bundle["decision_package"] = bundle.pop("studio_head_decision_package")
     payload["approved_artifacts"] = bundle
     return payload
 
@@ -129,6 +130,17 @@ def test_multiple_legacy_partial_records_are_ignored():
                 "approved_artifacts": {
                     "production_plan": {},
                     "production_schedule": {},
+                }
+            },
+            timestamp,
+        ),
+        Snapshot(
+            "Legacy Incomplete Approved Artifacts",
+            {
+                "approved_artifacts": {
+                    "decision_package": {
+                        "production_name": "Legacy Incomplete Approved Artifacts"
+                    }
                 }
             },
             timestamp,

@@ -52,6 +52,18 @@ def record_studio_head_decision(
             "APPROVE WITH CONDITIONS requires at least one explicit condition."
         )
 
+    if normalized_decision == "APPROVE WITH CONDITIONS":
+        missing_blockers = [
+            blocker
+            for blocker in decision_package.material_blockers
+            if blocker not in conditions
+        ]
+        if missing_blockers:
+            raise ValueError(
+                "APPROVE WITH CONDITIONS must preserve every material blocker "
+                f"as an explicit condition: {missing_blockers}"
+            )
+
     if (
         normalized_decision == "APPROVE"
         and decision_package.material_blockers
