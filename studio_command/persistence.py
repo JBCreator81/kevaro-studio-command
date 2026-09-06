@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from hashlib import sha256
 from typing import Any
 
@@ -9,11 +10,16 @@ from google.cloud import storage
 
 from .identity import canonical_production_name, require_production_identity
 from .models import (
+    AccountabilityActor,
+    EvidenceSourceReference,
     FinalProductionPackage,
+    GovernedEvidenceAmendment,
     GovernedProductionRuntimeState,
     CrewMember,
     ProductionAssetRegistry,
 )
+from .decisions import apply_verified_evidence_amendment, evidence_amendment_stale_artifacts
+from .refresh import apply_selective_refresh, rebuild_platform_amendment_artifacts
 from fastapi.encoders import jsonable_encoder
 
 
@@ -91,6 +97,37 @@ def _runtime_identity(runtime_state: GovernedProductionRuntimeState) -> str:
         runtime_state.memory_snapshot.production_name,
         *(entry.production_name for entry in runtime_state.decision_history),
     )
+
+
+def _evidence_value(
+    review_bundle: dict[str, Any],
+    artifact_key: str,
+    field_path: list[str | int],
+) -> Any:
+    if artifact_key not in review_bundle or not field_path:
+        raise ValueError("Evidence reference is missing or invalid.")
+    value: Any = review_bundle[artifact_key]
+    for segment in field_path:
+        if isinstance(segment, bool):
+            raise ValueError("Evidence field path is invalid.")
+        if isinstance(segment, int) and isinstance(value, list):
+            if segment < 0 or segment >= len(value):
+                raise ValueError("Evidence field path does not exist exactly.")
+            value = value[segment]
+        elif isinstance(segment, str) and isinstance(value, dict) and segment in value:
+            value = value[segment]
+        else:
+            raise ValueError("Evidence field path does not exist exactly.")
+    return value
+
+
+def _runtime_payload(runtime_state: GovernedProductionRuntimeState) -> dict[str, Any]:
+    canonical_name = _runtime_identity(runtime_state)
+    payload = _firestore_encode(runtime_state.model_dump(mode="json"))
+    payload["production_name"] = canonical_name
+    payload["active_decision_sequence"] = runtime_state.memory_snapshot.active_decision_sequence
+    payload["current_stage"] = runtime_state.current_stage
+    return payload
 
 
 class ProductionPersistence:
@@ -238,23 +275,130 @@ class ProductionPersistence:
         self,
         runtime_state: GovernedProductionRuntimeState,
     ) -> None:
-        canonical_name = _runtime_identity(runtime_state)
-        payload = _firestore_encode(
-            runtime_state.model_dump(mode="json")
-        )
-
-        payload["production_name"] = canonical_name
-        payload["active_decision_sequence"] = (
-            runtime_state.memory_snapshot.active_decision_sequence
-        )
-        payload["current_stage"] = runtime_state.current_stage
-
-        self._production_document(
-            runtime_state.production_name
-        ).set(
-            payload,
+        self._production_document(runtime_state.production_name).set(
+            _runtime_payload(runtime_state),
             merge=True,
         )
+
+    def reconcile_condition_with_evidence(
+        self,
+        *,
+        production_name: str,
+        condition: str,
+        resolution_summary: str,
+        amended_artifact: str,
+        source_references: list[dict[str, Any]],
+        recorded_by: AccountabilityActor,
+    ) -> GovernedProductionRuntimeState:
+        canonical_name = canonical_production_name(production_name)
+        target_document = self._production_document(canonical_name)
+        transaction = self.firestore_client.transaction()
+
+        @firestore.transactional
+        def apply_amendment(transaction):
+            target_snapshot = target_document.get(transaction=transaction)
+            target_payload = target_snapshot.to_dict() if target_snapshot.exists else None
+            if not isinstance(target_payload, dict):
+                raise ValueError("Governed production runtime was not found.")
+            runtime_state = GovernedProductionRuntimeState.model_validate(
+                _firestore_decode(target_payload)
+            )
+            require_production_identity(canonical_name, _runtime_identity(runtime_state))
+
+            verified_references: list[EvidenceSourceReference] = []
+            seen_references: set[tuple[str, str, tuple[str | int, ...]]] = set()
+            for reference in source_references:
+                source_name = canonical_production_name(reference["source_production_name"])
+                artifact_key = reference["artifact_key"]
+                field_path = reference["field_path"]
+                reference_key = (source_name, artifact_key, tuple(field_path))
+                if reference_key in seen_references:
+                    raise ValueError("Evidence references must be unambiguous and unique.")
+                seen_references.add(reference_key)
+                source_snapshot = self._production_document(source_name).get(
+                    transaction=transaction
+                )
+                source_payload = source_snapshot.to_dict() if source_snapshot.exists else None
+                if not isinstance(source_payload, dict):
+                    raise ValueError("Evidence source production was not found.")
+                review_bundle = _firestore_decode(source_payload.get("pending_review_bundle"))
+                if not isinstance(review_bundle, dict):
+                    raise ValueError("Evidence source bundle was not found.")
+                try:
+                    require_production_identity(
+                        source_name,
+                        review_bundle["production_plan"]["production_name"],
+                        review_bundle["production_schedule"]["production_name"],
+                        review_bundle["studio_head_decision_package"]["production_name"],
+                    )
+                except (KeyError, TypeError) as exc:
+                    raise ValueError("Evidence source identity is invalid.") from exc
+                verified_value = _evidence_value(review_bundle, artifact_key, field_path)
+                if verified_value != reference["expected_value"]:
+                    raise ValueError("Evidence value does not match persisted source evidence.")
+                verified_references.append(EvidenceSourceReference(
+                    source_production_name=source_name,
+                    artifact_key=artifact_key,
+                    field_path=field_path,
+                    verified_value=verified_value,
+                ))
+
+            amendment = GovernedEvidenceAmendment(
+                production_name=canonical_name,
+                resolved_condition=condition,
+                resolution_summary=resolution_summary,
+                amended_artifact=amended_artifact,
+                source_references=verified_references,
+                stale_artifacts=evidence_amendment_stale_artifacts(amended_artifact),
+                recorded_by=recorded_by,
+                recorded_at=datetime.now(timezone.utc),
+            )
+            updated_runtime = apply_verified_evidence_amendment(
+                runtime_state=runtime_state,
+                amendment=amendment,
+            )
+            transaction.set(target_document, _runtime_payload(updated_runtime), merge=True)
+            return updated_runtime
+
+        return apply_amendment(transaction)
+
+    def refresh_stale_artifacts(
+        self, *, production_name: str,
+    ) -> tuple[GovernedProductionRuntimeState, dict[str, Any]]:
+        """Rebuild and atomically install the exact persisted stale graph closure."""
+        canonical_name = canonical_production_name(production_name)
+        target_document = self._production_document(canonical_name)
+        transaction = self.firestore_client.transaction()
+
+        @firestore.transactional
+        def install_refresh(transaction):
+            snapshot = target_document.get(transaction=transaction)
+            payload = snapshot.to_dict() if snapshot.exists else None
+            if not isinstance(payload, dict):
+                raise ValueError("Governed production runtime was not found.")
+            runtime_state = GovernedProductionRuntimeState.model_validate(
+                _firestore_decode(payload)
+            )
+            require_production_identity(canonical_name, _runtime_identity(runtime_state))
+            approved_artifacts = _firestore_decode(payload.get("approved_artifacts"))
+            if not isinstance(approved_artifacts, dict):
+                raise ValueError("Governed approved artifacts were not found.")
+            rebuilt = rebuild_platform_amendment_artifacts(
+                runtime_state=runtime_state, approved_artifacts=approved_artifacts,
+            )
+            updated_runtime, merged_artifacts = apply_selective_refresh(
+                runtime_state=runtime_state, rebuilt_artifacts=rebuilt,
+                approved_artifacts=approved_artifacts,
+            )
+            transaction.set(target_document, {
+                **_runtime_payload(updated_runtime),
+                "approved_artifacts": _firestore_encode(
+                    jsonable_encoder(merged_artifacts)
+                ),
+            }, merge=True)
+            return updated_runtime, merged_artifacts
+
+        return install_refresh(transaction)
 
     def save_final_package(
         self,

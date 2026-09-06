@@ -21,7 +21,7 @@ KEVARO_STUDIO_HEAD_NAME=<authorized judge/demo Studio Head display name>
 
 On Cloud Run, application startup reads `latest` for both secret IDs directly through Secret Manager using Application Default Credentials. Missing, empty, inaccessible, or misconfigured secrets abort startup. Cloud mode never falls back to `PARALLEL_API_KEY` or `KEVARO_INTERNAL_AUTH_TOKEN` environment values.
 
-The deployed service must remain public only for judge-facing reads. Mutation routes require the trusted `x-kevaro-internal-token` server context and bind Studio Head identity to the configured server name. Do not embed this credential in frontend bundles. A trusted server-side caller or gateway is required for public mutation workflows.
+Judge-facing reads may be public, but production-specific access and every mutation use a signed crew session resolved against server-side production assignments. Studio Head-only transitions—including decisions, evidence amendments, selective refresh, and finalization—are authorized on the server. The legacy trusted internal token remains a deployment health boundary; never embed it, a session-signing secret, or an OAuth client secret in frontend bundles.
 
 Verify non-secret readiness with `GET /health`. Its `runtime_configuration` reports Google Cloud, Secret Manager, Parallel credential, and protected mutation boundary as `configured`/`unavailable` or `enabled`/`disabled`; it never returns values.
 

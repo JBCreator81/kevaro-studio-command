@@ -72,6 +72,8 @@ function App() {
   const [runtimeStatus, setRuntimeStatus] = useState(null);
   const [assetNotice, setAssetNotice] = useState("");
   const [assetBusy, setAssetBusy] = useState(false);
+  const [finalizeNotice, setFinalizeNotice] = useState("");
+  const [finalizeBusy, setFinalizeBusy] = useState(false);
   const [productionName, setProductionName] = useState("");
   const [currentCrew, setCurrentCrew] = useState(null);
   const [authConfig, setAuthConfig] = useState(null);
@@ -155,6 +157,17 @@ function App() {
     } catch (uploadError) { setAssetNotice(uploadError.message); } finally { setAssetBusy(false); }
   };
 
+  const finalizeCurrentProduction = async () => {
+    if (!snapshot?.finalization_eligible || finalizeBusy) return;
+    setFinalizeBusy(true); setFinalizeNotice("Running governed finalization…");
+    try {
+      const response = await fetch("/api/productions/" + encodeURIComponent(snapshot.production_name) + "/finalize", { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(typeof result.detail === "string" ? result.detail : "Finalization was rejected by governed gates.");
+      const refreshed = await fetch(snapshotEndpoint); setSnapshot(await refreshed.json()); setFinalizeNotice(`Finalized: ${result.delivery_status}`);
+    } catch (finalizeError) { setFinalizeNotice(finalizeError.message); } finally { setFinalizeBusy(false); }
+  };
+
   const metrics = useMemo(() => {
     if (!snapshot) return null;
 
@@ -166,8 +179,8 @@ function App() {
       total,
       completed,
       progress: total ? Math.round((completed / total) * 100) : 0,
-      blockers: graph.blocked_nodes.length,
-      stale: graph.stale_nodes.length,
+      blockers: snapshot.active_conditions?.length ?? graph.blocked_nodes.length,
+      stale: snapshot.stale_artifacts?.length ?? graph.stale_nodes.length,
     };
   }, [snapshot]);
 
@@ -492,7 +505,7 @@ function App() {
         <div className="readiness-card">
           <div className="readiness-orbit">
             <div className="readiness-orbit-inner">
-              <span>{delivery?.readiness_score ?? metrics.progress}%</span>
+              <span>{delivery?.readiness_score ?? snapshot.readiness_score ?? metrics.progress}%</span>
               <small>READY</small>
             </div>
           </div>
@@ -503,7 +516,7 @@ function App() {
             <div
               className="progress-fill"
               style={{
-                width: `${delivery?.readiness_score ?? metrics.progress}%`,
+                width: `${delivery?.readiness_score ?? snapshot.readiness_score ?? metrics.progress}%`,
               }}
             />
           </div>
@@ -776,6 +789,21 @@ function App() {
                 {snapshot.corrective_cycle_active ? "Active" : "Clear"}
               </strong>
             </div>
+            <button className="finalization-control" type="button" disabled={!snapshot.finalization_eligible || finalizeBusy} onClick={finalizeCurrentProduction}>
+              {snapshot.finalization_eligible ? (finalizeBusy ? "FINALIZING…" : "FINALIZE PRODUCTION") : "FINALIZATION BLOCKED BY GOVERNED GATES"}
+            </button>
+            {finalizeNotice && <small className="finalize-notice">{finalizeNotice}</small>}
+          </article>
+
+          <article className="panel memory-panel condition-panel">
+            <p className="eyebrow">Evidence Before Execution</p>
+            <h3>{snapshot.active_conditions?.length || 0} external conditions remain</h3>
+            <div className="condition-list">
+              {snapshot.condition_guidance?.map((item) => (
+                <div key={item.condition}><strong>{item.condition}</strong><span>Waiting on {item.provider}</span><small>{item.next_action}</small></div>
+              ))}
+            </div>
+            {!!snapshot.evidence_amendments?.length && <div className="amendment-proof"><small>VERIFIED AMENDMENT</small><strong>{snapshot.evidence_amendments.at(-1).resolved_condition}</strong><span>{snapshot.evidence_amendments.at(-1).source_references?.map((ref) => `${ref.source_production_name} · ${ref.artifact_key} · ${String(ref.verified_value)}`).join(" · ")}</span></div>}
           </article>
 
           <article className="panel memory-panel">
@@ -792,6 +820,10 @@ function App() {
               <span>stale artifacts</span>
             </div>
 
+            <div className="memory-stat">
+              <strong>{snapshot.artifact_refreshes?.length || 0}</strong>
+              <span>governed selective refreshes</span>
+            </div>
             <div className="memory-state">
               <span className="memory-pulse" />
               Recovery State Available

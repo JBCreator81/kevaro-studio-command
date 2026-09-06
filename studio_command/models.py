@@ -1170,6 +1170,34 @@ class ProductionMemorySnapshot(BaseModel):
     )
 
 
+class EvidenceSourceReference(BaseModel):
+    source_production_name: str
+    artifact_key: str
+    field_path: List[str | int]
+    verified_value: Any
+
+
+class GovernedEvidenceAmendment(BaseModel):
+    production_name: str
+    resolved_condition: str
+    resolution_summary: str
+    amended_artifact: str
+    source_references: List[EvidenceSourceReference]
+    stale_artifacts: List[str]
+    recorded_by: AccountabilityActor
+    recorded_at: datetime
+
+
+class GovernedArtifactRefresh(BaseModel):
+    production_name: str
+    source_amendment_index: int
+    rebuilt_artifacts: List[str]
+    preserved_artifacts: List[str]
+    active_conditions: List[str]
+    refreshed_by: AccountabilityActor
+    refreshed_at: datetime
+
+
 class ProductionChangeImpact(BaseModel):
     production_name: str = Field(
         description="Production affected by a proposed command or change."
@@ -1271,6 +1299,14 @@ class GovernedProductionRuntimeState(AccountableArtifact):
     )
     current_stage: str = Field(
         description="Unified runtime stage presented to downstream orchestration."
+    )
+    evidence_amendments: List[GovernedEvidenceAmendment] = Field(
+        default_factory=list,
+        description="Append-only verified condition-reconciliation history."
+    )
+    artifact_refreshes: List[GovernedArtifactRefresh] = Field(
+        default_factory=list,
+        description="Append-only governed selective-rebuild history."
     )
 
 

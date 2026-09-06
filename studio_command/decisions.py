@@ -4,6 +4,7 @@ from .identity import require_production_identity
 from .accountability import add_human_approval, human_decision_accountability
 
 from .models import (
+    GovernedEvidenceAmendment,
     GovernedProductionRuntimeState,
     StudioHeadDecisionPackage,
     StudioHeadDecisionRecord,
@@ -16,6 +17,81 @@ ALLOWED_STUDIO_HEAD_DECISIONS = {
     "REQUEST CHANGES",
     "REJECT",
 }
+
+
+ARTIFACT_DEPENDENTS = {
+    "production_brief": ["research_packet", "creative_treatment"],
+    "research_packet": ["production_plan"],
+    "creative_treatment": ["production_plan"],
+    "production_plan": ["production_schedule", "asset_media_plan"],
+    "production_schedule": ["clearance_report", "verification_report"],
+    "asset_media_plan": ["clearance_report", "verification_report"],
+    "clearance_report": ["verification_report"],
+    "verification_report": ["decision_package"],
+    "decision_package": [],
+}
+
+
+def evidence_amendment_stale_artifacts(amended_artifact: str) -> list[str]:
+    if amended_artifact not in ARTIFACT_DEPENDENTS:
+        raise ValueError("Evidence amendment names an unknown governed artifact.")
+    stale: list[str] = []
+    queue = list(ARTIFACT_DEPENDENTS[amended_artifact])
+    while queue:
+        artifact = queue.pop(0)
+        if artifact in stale:
+            continue
+        stale.append(artifact)
+        queue.extend(ARTIFACT_DEPENDENTS[artifact])
+    return stale
+
+
+def apply_verified_evidence_amendment(
+    *,
+    runtime_state: GovernedProductionRuntimeState,
+    amendment: GovernedEvidenceAmendment,
+) -> GovernedProductionRuntimeState:
+    require_production_identity(runtime_state.production_name, amendment.production_name)
+    condition = amendment.resolved_condition.strip()
+    if condition not in runtime_state.workflow_state.active_conditions:
+        raise ValueError("Evidence amendment must name an exact active condition.")
+    if not amendment.resolution_summary.strip() or not amendment.source_references:
+        raise ValueError("Evidence amendment requires a summary and verified source evidence.")
+    if amendment.recorded_by.actor_type != "HUMAN" or amendment.recorded_by.role != "Studio Head":
+        raise ValueError("Evidence amendment requires authenticated Studio Head authority.")
+    if any(
+        reference.artifact_key != amendment.amended_artifact
+        for reference in amendment.source_references
+    ):
+        raise ValueError("Evidence sources must exactly match the amended artifact.")
+    expected_stale = evidence_amendment_stale_artifacts(amendment.amended_artifact)
+    if amendment.stale_artifacts != expected_stale:
+        raise ValueError("Evidence amendment stale-artifact closure is invalid.")
+
+    remaining = [item for item in runtime_state.workflow_state.active_conditions if item != condition]
+    workflow_state = runtime_state.workflow_state.model_copy(
+        update={"active_conditions": remaining}
+    )
+    prior_stale = runtime_state.memory_snapshot.stale_artifacts
+    stale = list(dict.fromkeys([*prior_stale, *expected_stale]))
+    preserved = [
+        item for item in runtime_state.memory_snapshot.preserved_artifacts
+        if item not in stale
+    ]
+    memory_snapshot = runtime_state.memory_snapshot.model_copy(update={
+        "active_conditions": remaining,
+        "preserved_artifacts": preserved,
+        "stale_artifacts": stale,
+        "current_stage": "EVIDENCE_REFRESH_REQUIRED",
+    })
+    return runtime_state.model_copy(update={
+        "workflow_state": workflow_state,
+        "memory_snapshot": memory_snapshot,
+        "evidence_amendments": [*runtime_state.evidence_amendments, amendment],
+        "execution_authorized": False,
+        "corrective_cycle_active": True,
+        "current_stage": "EVIDENCE_REFRESH_REQUIRED",
+    })
 
 
 def record_studio_head_decision(

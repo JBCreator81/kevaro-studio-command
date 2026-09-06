@@ -419,6 +419,18 @@ def build_studio_command_snapshot(
             if item["node_id"] == node["node_id"]
         ]
 
+    decision_artifact = (approved_artifacts or {}).get("decision_package", {})
+    clearance_artifact = (approved_artifacts or {}).get("clearance_report", {})
+    verification_artifact = (approved_artifacts or {}).get("verification_report", {})
+    condition_guidance = [
+        {
+            "condition": condition,
+            "provider": ("Client / Studio Head" if condition.startswith("Missing Client/Studio Head Input") else "Rights owners / licensors"),
+            "blocked_work": "Production execution and final delivery",
+            "next_action": f"Supply verified production-linked evidence for: {condition}",
+        }
+        for condition in runtime_state.workflow_state.active_conditions
+    ]
     return {
         "production_name": runtime_state.production_name,
         "current_stage": runtime_state.current_stage,
@@ -458,4 +470,18 @@ def build_studio_command_snapshot(
             "next_best_action": production_assets["next_required_asset_action"],
             "actions": production_assets["asset_actions"],
         },
+        "condition_guidance": condition_guidance,
+        "evidence_amendments": [item.model_dump(mode="json") for item in runtime_state.evidence_amendments],
+        "artifact_refreshes": [item.model_dump(mode="json") for item in runtime_state.artifact_refreshes],
+        "clearance_status": clearance_artifact.get("clearance_decision"),
+        "qa_status": verification_artifact.get("qa_decision"),
+        "readiness_score": verification_artifact.get("readiness_score"),
+        "finalization_eligible": bool(
+            runtime_state.execution_authorized
+            and not runtime_state.corrective_cycle_active
+            and not runtime_state.memory_snapshot.stale_artifacts
+            and clearance_artifact.get("clearance_decision", "").upper() != "BLOCKED"
+            and verification_artifact.get("qa_decision", "").upper() != "FAIL"
+            and not decision_artifact.get("material_blockers")
+        ),
     }

@@ -359,27 +359,20 @@ The project has already demonstrated:
 - `READY_FOR_DELIVERY`
 - certified lifecycle readiness score of 100 in controlled testing
 - Reality Shift preservation and stale-work propagation
+- authenticated, exact-condition evidence amendment with production-linked provenance
+- graph-ordered selective artifact refresh with one-document atomic installation
+- fail-closed finalization when clearance, QA, or evidence gates remain unresolved
 - frontend rendering of production state
 - Live Production Graph
 - Human Authority Gate
 - Node Intelligence backend artifact contract
 - production frontend build
 
-## Current Development Focus
+## Current Certification Snapshot
 
-The next implementation priorities are:
+The current Aurelian certification production demonstrates the fail-closed path, not a manufactured green state. A Studio Head used persisted production-linked evidence to reconcile one exact platform condition. Kevaro preserved the original decision, appended amendment provenance, marked the dependent graph closure stale, selectively refreshed it in one transaction, and retained five genuinely unresolved external conditions. Clearance remains `BLOCKED`, QA remains `FAIL`, readiness remains 15, and finalization correctly refuses.
 
-1. Complete canonical production identity across persistence and production-specific routes.
-2. Finish Full Node Intelligence using real persisted artifacts.
-3. Implement Crew Identity and production accountability metadata.
-4. Implement backend-enforced Work Ownership and Access Control.
-5. Implement Role-Aware Guidance and Next Best Action.
-6. Make Parallel evidence fully visible across judge-facing surfaces.
-7. Complete premium cinematic opening and interface polish.
-8. Run a fresh current-schema production from directive through final package.
-9. Simplify demo startup and runtime reliability.
-10. Deploy the final public Google Cloud application.
-11. Complete competition documentation, screenshots, runtime proof, demo video, and Devpost submission.
+Current remaining work is external rather than technical: the client or Studio Head must supply detailed brand guidelines, upload methods, detailed budget constraints, and product-use permission; rights owners or licensors must supply talent, location, music, font, and SFX clearance. Public Google Cloud deployment and the Devpost media/submission are also operator tasks. See [the three-minute demo runbook](docs/HACKATHON_DEMO.md).
 
 ## Technology
 
@@ -404,8 +397,9 @@ The hackathon runtime is intentionally kept inside the approved Google AI / Goog
 kevaro-studio-command/
 ├── studio_command/        # governed backend, agents, state, persistence, API
 ├── frontend/              # React production command interface
-├── docs/                  # canonical contract and project documentation
-├── tests/                 # validation and lifecycle tests
+├── docs/                  # canonical contract, deployment, and demo documentation
+├── test_*.py              # lifecycle, governance, API, and UI-contract tests
 ├── README.md
 └── LICENSE
+```
 

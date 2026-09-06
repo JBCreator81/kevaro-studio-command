@@ -144,6 +144,20 @@ class StudioHeadDecisionRequest(BaseModel):
     unresolved_risks_acknowledged: list[str] = Field(default_factory=list)
 
 
+class EvidenceReferenceRequest(BaseModel):
+    source_production_name: str
+    artifact_key: str
+    field_path: list[str | int]
+    expected_value: Any
+
+
+class EvidenceAmendmentRequest(BaseModel):
+    resolved_condition: str
+    resolution_summary: str
+    amended_artifact: str
+    source_references: list[EvidenceReferenceRequest]
+
+
 def _requires_crew_session(request: Request) -> bool:
     path = request.url.path
     if path == "/api/reality-shift":
@@ -873,6 +887,74 @@ def studio_head_decision(
         "execution_authorized": runtime_state.execution_authorized,
         "active_conditions": runtime_state.workflow_state.active_conditions,
         "decision_sequence": runtime_state.memory_snapshot.active_decision_sequence,
+    }
+
+
+@app.post("/api/productions/{production_name}/evidence-amendments")
+def amend_production_evidence(
+    production_name: str,
+    amendment_request: EvidenceAmendmentRequest,
+    request: Request,
+) -> dict[str, Any]:
+    canonical_name = canonical_production_name(production_name)
+    identity = _crew_identity(request, canonical_name)
+    try:
+        require_access(actor=identity.actor, action="APPROVE", accountability=None)
+        runtime_state = production_persistence.reconcile_condition_with_evidence(
+            production_name=canonical_name,
+            condition=amendment_request.resolved_condition,
+            resolution_summary=amendment_request.resolution_summary,
+            amended_artifact=amendment_request.amended_artifact,
+            source_references=[
+                reference.model_dump(mode="python")
+                for reference in amendment_request.source_references
+            ],
+            recorded_by=identity.actor,
+        )
+    except AuthorizationDenied as exc:
+        raise HTTPException(status_code=403, detail=exc.as_detail()) from exc
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    amendment = runtime_state.evidence_amendments[-1]
+    return {
+        "status": runtime_state.workflow_state.status,
+        "production_name": runtime_state.production_name,
+        "resolved_condition": amendment.resolved_condition,
+        "active_conditions": runtime_state.workflow_state.active_conditions,
+        "stale_artifacts": runtime_state.memory_snapshot.stale_artifacts,
+        "current_stage": runtime_state.current_stage,
+        "execution_authorized": runtime_state.execution_authorized,
+        "evidence_amendment": amendment.model_dump(mode="json"),
+    }
+
+
+@app.post("/api/productions/{production_name}/refresh-stale-artifacts")
+def refresh_stale_production_artifacts(
+    production_name: str, request: Request,
+) -> dict[str, Any]:
+    canonical_name = canonical_production_name(production_name)
+    try:
+        identity = _crew_identity(request, canonical_name)
+        require_access(actor=identity.actor, action="APPROVE", accountability=None)
+        runtime_state, artifacts = production_persistence.refresh_stale_artifacts(
+            production_name=canonical_name
+        )
+    except AuthorizationDenied as exc:
+        raise HTTPException(status_code=403, detail=exc.as_detail()) from exc
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {
+        "production_name": runtime_state.production_name,
+        "status": runtime_state.workflow_state.status,
+        "current_stage": runtime_state.current_stage,
+        "active_conditions": runtime_state.workflow_state.active_conditions,
+        "stale_artifacts": runtime_state.memory_snapshot.stale_artifacts,
+        "rebuilt_artifacts": runtime_state.artifact_refreshes[-1].rebuilt_artifacts,
+        "clearance": artifacts["clearance_report"]["clearance_decision"],
+        "qa": artifacts["verification_report"]["qa_decision"],
+        "readiness": artifacts["verification_report"]["readiness_score"],
+        "execution_authorized": runtime_state.execution_authorized,
     }
 
 
