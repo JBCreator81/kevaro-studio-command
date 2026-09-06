@@ -34,3 +34,7 @@ cd frontend && npm run dev
 ```
 
 For the production build, run `npm run build` in `frontend/`; the FastAPI service serves `frontend/dist`. Cloud configuration and credential boundaries are documented in `docs/deployment/GOOGLE_CLOUD_RUNTIME.md`.
+
+## Pre-recording authority gate
+
+`docs/aurelian/FIRST_PARTY_EVIDENCE_DRAFT.md` prepares the bounded brand, delivery, budget, prop, and sourcing declarations, but it is deliberately not treated as approval. Before recording a later zero-blocker path, an authenticated Studio Head must resolve the `Everyday Glow` / `Symphony of Serenity` conflict and adopt the applicable declarations. Until then, demonstrate the truthful five-condition refusal path documented above.
