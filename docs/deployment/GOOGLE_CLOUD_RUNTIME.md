@@ -4,10 +4,12 @@ The existing multi-stage `Dockerfile` is the only deployment artifact. It starts
 
 ## Required Google Cloud configuration
 
-Use project `kevaro-studio-command`. The Cloud Run runtime service account needs only the existing Firestore/Cloud Storage permissions required by the application and `roles/secretmanager.secretAccessor` on these two secrets:
+Use project `kevaro-studio-command`. The Cloud Run runtime service account needs only the existing Firestore/Cloud Storage permissions required by the application and `roles/secretmanager.secretAccessor` on these four existing secret resources:
 
-- `parallel-api-key` — the existing Parallel API credential
-- `kevaro-internal-auth-token` — the existing trusted internal mutation credential
+- `parallel-api-key` — the Parallel API credential
+- `kevaro-internal-auth-token` — the trusted internal mutation credential
+- `kevaro-session-signing-secret` — the signed crew-session key
+- `kevaro-google-oauth-client-id` — the Google OAuth client identifier injected by secret reference
 
 Secret values are created or rotated out of band. Do not put values in this repository, build arguments, image environment, deployment manifests, or command history. Secret IDs can be overridden with `KEVARO_PARALLEL_SECRET_ID` and `KEVARO_INTERNAL_AUTH_SECRET_ID`; values cannot.
 
@@ -17,9 +19,10 @@ Set non-secret Cloud Run environment configuration:
 KEVARO_RUNTIME_MODE=cloud
 GOOGLE_CLOUD_PROJECT=kevaro-studio-command
 KEVARO_STUDIO_HEAD_NAME=<authorized judge/demo Studio Head display name>
+KEVARO_GOOGLE_AUTH_CLIENT_ID=<Secret Manager reference: kevaro-google-oauth-client-id:latest>
 ```
 
-On Cloud Run, application startup reads `latest` for both secret IDs directly through Secret Manager using Application Default Credentials. Missing, empty, inaccessible, or misconfigured secrets abort startup. Cloud mode never falls back to `PARALLEL_API_KEY` or `KEVARO_INTERNAL_AUTH_TOKEN` environment values.
+On Cloud Run, application startup reads `latest` for the Parallel, internal-auth, and session-signing secret IDs directly through Secret Manager using Application Default Credentials. Cloud Run injects the OAuth client identifier from its existing secret reference. Missing, empty, inaccessible, or misconfigured values abort startup. Cloud mode never falls back to local credential environment values.
 
 Judge-facing reads may be public, but production-specific access and every mutation use a signed crew session resolved against server-side production assignments. Studio Head-only transitions—including decisions, evidence amendments, selective refresh, and finalization—are authorized on the server. The legacy trusted internal token remains a deployment health boundary; never embed it, a session-signing secret, or an OAuth client secret in frontend bundles.
 
@@ -36,3 +39,13 @@ KEVARO_STUDIO_HEAD_NAME=Studio Head
 ```
 
 Tests should inject `RuntimeConfig` or a mock secret provider. Setting `KEVARO_RUNTIME_MODE=cloud` intentionally enables fail-closed deployed behavior.
+
+## Verified public target
+
+The intended service is `kevaro-studio-command` in `northamerica-northeast1` using `kevaro-studio-runtime@kevaro-studio-command.iam.gserviceaccount.com`. Its canonical URL is:
+
+```text
+https://kevaro-studio-command-1016343355645.northamerica-northeast1.run.app
+```
+
+Deployment verification must confirm that `/health` reports configured cloud, Secret Manager, Parallel, mutation-auth, and crew-session boundaries; `/api/studio-snapshot` returns `bootstrap_source: GOVERNED_RUNTIME`; anonymous production-specific reads and mutations return 401; and an authenticated finalization attempt remains subject to current clearance, QA, readiness, and evidence gates.
