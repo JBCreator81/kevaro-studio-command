@@ -343,3 +343,16 @@ def test_public_asset_mutation_requires_trusted_context(monkeypatch):
     assert response.json()["detail"]["reason_code"] in {
         "AUTHENTICATED_SESSION_REQUIRED", "AUTH_CONFIGURATION_UNAVAILABLE",
     }
+
+
+def test_asset_ingress_accepts_font_and_provenance_manifest_types():
+    from studio_command.service import _validated_asset_content_type
+    assert _validated_asset_content_type("font/ttf") == "font/ttf"
+    assert _validated_asset_content_type("application/json") == "application/json"
+
+
+def test_asset_request_rejects_unknown_category_before_storage():
+    from pydantic import ValidationError
+    from studio_command.service import AssetRegistrationRequest
+    with pytest.raises(ValidationError):
+        AssetRegistrationRequest(node_id="node", asset_category="FONT", filename="font.ttf", display_name="font", media_document_type="font/ttf")

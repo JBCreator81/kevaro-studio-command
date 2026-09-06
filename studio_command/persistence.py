@@ -19,7 +19,8 @@ from .models import (
     ProductionAssetRegistry,
 )
 from .decisions import apply_verified_evidence_amendment, evidence_amendment_stale_artifacts
-from .refresh import apply_selective_refresh, rebuild_platform_amendment_artifacts
+from .refresh import apply_selective_refresh, rebuild_stale_artifacts
+from .adoption import apply_first_party_adoption
 from fastapi.encoders import jsonable_encoder
 
 
@@ -362,6 +363,31 @@ class ProductionPersistence:
 
         return apply_amendment(transaction)
 
+    def adopt_first_party_evidence(
+        self, *, production_name: str, adopted_by: AccountabilityActor,
+    ) -> GovernedProductionRuntimeState:
+        canonical_name = canonical_production_name(production_name)
+        document = self._production_document(canonical_name)
+        transaction = self.firestore_client.transaction()
+
+        @firestore.transactional
+        def adopt(transaction):
+            snapshot = document.get(transaction=transaction)
+            payload = snapshot.to_dict() if snapshot.exists else None
+            if not isinstance(payload, dict):
+                raise ValueError("Governed production runtime was not found.")
+            runtime = GovernedProductionRuntimeState.model_validate(_firestore_decode(payload))
+            require_production_identity(canonical_name, _runtime_identity(runtime))
+            artifacts = _firestore_decode(payload.get("approved_artifacts"))
+            concept = (((artifacts or {}).get("creative_treatment") or {}).get("recommended_concept") or {}).get("concept_name")
+            if concept != "Everyday Glow":
+                raise ValueError("Conflicting creative concept does not match persisted evidence exactly.")
+            updated = apply_first_party_adoption(runtime_state=runtime, actor=adopted_by)
+            transaction.set(document, _runtime_payload(updated), merge=True)
+            return updated
+
+        return adopt(transaction)
+
     def refresh_stale_artifacts(
         self, *, production_name: str,
     ) -> tuple[GovernedProductionRuntimeState, dict[str, Any]]:
@@ -383,7 +409,7 @@ class ProductionPersistence:
             approved_artifacts = _firestore_decode(payload.get("approved_artifacts"))
             if not isinstance(approved_artifacts, dict):
                 raise ValueError("Governed approved artifacts were not found.")
-            rebuilt = rebuild_platform_amendment_artifacts(
+            rebuilt = rebuild_stale_artifacts(
                 runtime_state=runtime_state, approved_artifacts=approved_artifacts,
             )
             updated_runtime, merged_artifacts = apply_selective_refresh(

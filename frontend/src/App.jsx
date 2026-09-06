@@ -804,6 +804,8 @@ function App() {
               ))}
             </div>
             {!!snapshot.evidence_amendments?.length && <div className="amendment-proof"><small>VERIFIED AMENDMENT</small><strong>{snapshot.evidence_amendments.at(-1).resolved_condition}</strong><span>{snapshot.evidence_amendments.at(-1).source_references?.map((ref) => `${ref.source_production_name} · ${ref.artifact_key} · ${String(ref.verified_value)}`).join(" · ")}</span></div>}
+            {!!snapshot.creative_directives?.length && <div className="amendment-proof"><small>CANONICAL CREATIVE DIRECTIVE</small><strong>{snapshot.creative_directives.at(-1).canonical_concept}</strong><span>{snapshot.creative_directives.at(-1).conflicting_concept} preserved as stale/conflicting · directed by {snapshot.creative_directives.at(-1).directed_by?.display_name}</span></div>}
+            {!!snapshot.first_party_declarations?.length && <div className="amendment-proof"><small>ADOPTED FIRST-PARTY EVIDENCE</small><strong>{snapshot.first_party_declarations.map((item) => formatLabel(item.declaration_type)).join(" · ")}</strong></div>}
           </article>
 
           <article className="panel memory-panel">

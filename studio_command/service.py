@@ -36,6 +36,7 @@ from studio_command.decisions import (
     finalize_production_package,
 )
 from studio_command.models import (
+    AssetCategory,
     AssetMediaPlan,
     ClearanceComplianceReport,
     CreativeTreatment,
@@ -69,6 +70,8 @@ production_persistence = ProductionPersistence()
 
 PROTECTED_MUTATION_SUFFIXES = ("/decision", "/finalize", "/deliver")
 ALLOWED_ASSET_CONTENT_TYPES = {
+    "application/json",
+    "font/ttf",
     "application/msword",
     "application/pdf",
     "application/rtf",
@@ -83,7 +86,7 @@ ALLOWED_ASSET_CONTENT_PREFIXES = ("audio/", "image/", "video/")
 class AssetRegistrationRequest(BaseModel):
     node_id: str
     task_id: str | None = None
-    asset_category: str
+    asset_category: AssetCategory
     filename: str
     display_name: str
     media_document_type: str
@@ -887,6 +890,30 @@ def studio_head_decision(
         "execution_authorized": runtime_state.execution_authorized,
         "active_conditions": runtime_state.workflow_state.active_conditions,
         "decision_sequence": runtime_state.memory_snapshot.active_decision_sequence,
+    }
+
+
+@app.post("/api/productions/{production_name}/first-party-adoption")
+def adopt_first_party_evidence(production_name: str, request: Request) -> dict[str, Any]:
+    canonical_name = canonical_production_name(production_name)
+    identity = _crew_identity(request, canonical_name)
+    try:
+        require_access(actor=identity.actor, action="APPROVE", accountability=None)
+        runtime = production_persistence.adopt_first_party_evidence(
+            production_name=canonical_name, adopted_by=identity.actor,
+        )
+    except AuthorizationDenied as exc:
+        raise HTTPException(status_code=403, detail=exc.as_detail()) from exc
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {
+        "production_name": runtime.production_name,
+        "canonical_concept": runtime.creative_directives[-1].canonical_concept,
+        "conflicting_concept": runtime.creative_directives[-1].conflicting_concept,
+        "adopted_declarations": [item.declaration_type for item in runtime.first_party_declarations[-3:]],
+        "active_conditions": runtime.workflow_state.active_conditions,
+        "stale_artifacts": runtime.memory_snapshot.stale_artifacts,
+        "current_stage": runtime.current_stage,
     }
 
 

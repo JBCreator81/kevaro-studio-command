@@ -57,7 +57,7 @@ def test_transaction_installs_runtime_and_artifacts_in_one_write(monkeypatch):
     store = ProductionPersistence.__new__(ProductionPersistence)
     store.config = persistence_module.ProductionPersistenceConfig()
     store.firestore_client = client; store.storage_client = object()
-    monkeypatch.setattr(persistence_module, "rebuild_platform_amendment_artifacts", lambda **kwargs: rebuilt_bundle())
+    monkeypatch.setattr(persistence_module, "rebuild_stale_artifacts", lambda **kwargs: rebuilt_bundle())
     updated, merged = store.refresh_stale_artifacts(production_name=TARGET)
     assert len(client.last_transaction.writes) == 1
     written = client.last_transaction.writes[0][1]
@@ -73,7 +73,7 @@ def test_transaction_validation_failure_performs_no_write(monkeypatch):
     before = amended_runtime(); doc = Document({**before.model_dump(mode="json"), "approved_artifacts": approved_bundle()})
     client = FirestoreClient({sha256(TARGET.encode()).hexdigest(): doc})
     store = ProductionPersistence.__new__(ProductionPersistence); store.config = persistence_module.ProductionPersistenceConfig(); store.firestore_client = client; store.storage_client = object()
-    monkeypatch.setattr(persistence_module, "rebuild_platform_amendment_artifacts", lambda **kwargs: (_ for _ in ()).throw(ValueError("validation failed")))
+    monkeypatch.setattr(persistence_module, "rebuild_stale_artifacts", lambda **kwargs: (_ for _ in ()).throw(ValueError("validation failed")))
     with pytest.raises(ValueError, match="validation failed"):
         store.refresh_stale_artifacts(production_name=TARGET)
     assert client.last_transaction.writes == []

@@ -1,0 +1,62 @@
+{
+  "production_name": "Aurelian Parallel E2E Certification 20260903-B",
+  "canonical_concept": "Symphony of Serenity",
+  "manifest_status": "PARTIAL_EVIDENCE_PENDING_MEDIA_CREATION",
+  "external_asset_substitution_rule": "Any external substitute reopens its exact rights and clearance gate.",
+  "assets": [
+    {
+      "asset_id": "aurelian-font-noto-sans-variable",
+      "category": "FONT",
+      "status": "AVAILABLE_WITH_LICENSE",
+      "source_classification": "OPEN_SOURCE_THIRD_PARTY",
+      "file": "fonts/NotoSans-wdth-wght.ttf",
+      "intended_use": "Captions and restrained on-screen text",
+      "official_source": "https://github.com/google/fonts/tree/5e35378e6bda803962ee6fd257e444a7d459660d/ofl/notosans",
+      "source_commit": "5e35378e6bda803962ee6fd257e444a7d459660d",
+      "sha256": "bfb7bb691513f12e734dc346c03a03f784912432d7e3fa8e56efcf906fe86b3d",
+      "license": "SIL Open Font License 1.1",
+      "license_file": "fonts/OFL.txt",
+      "license_sha256": "cee9892f9f0cc8fe882c9e9537ee6a89621d86ee7ceaf70b02e2b2b1c25c061a"
+    },
+    {
+      "asset_id": "aurelian-talent-treatment",
+      "category": "TALENT",
+      "status": "NOT_REQUIRED_UNDER_ADOPTED_POLICY",
+      "source_classification": "NO_IDENTIFIABLE_PERSON",
+      "intended_use": "Abstract details, objects, textures, and non-identifiable generated forms only",
+      "provenance_required_if_changed": true
+    },
+    {
+      "asset_id": "aurelian-environments",
+      "category": "LOCATION",
+      "status": "REQUIRES_GENERATION",
+      "source_classification": "ORIGINAL_OR_VERIFIED_AI",
+      "intended_use": "Wholly generated or internally constructed fictional retreat environments",
+      "provenance_required": true
+    },
+    {
+      "asset_id": "aurelian-original-score",
+      "category": "MUSIC",
+      "status": "REQUIRES_CREATION",
+      "source_classification": "ORIGINAL_OR_AUTHORIZED_GENERATED",
+      "intended_use": "Production-specific score without commercial recordings or samples",
+      "provenance_required": true
+    },
+    {
+      "asset_id": "aurelian-original-sound-design",
+      "category": "SFX",
+      "status": "REQUIRES_CREATION",
+      "source_classification": "ORIGINAL_OR_AUTHORIZED_GENERATED",
+      "intended_use": "Production-specific ambient sound design without external libraries",
+      "provenance_required": true
+    },
+    {
+      "asset_id": "aurelian-fictional-prop",
+      "category": "PROP",
+      "status": "BLOCKED_EXACT_IDENTITY_UNCONFIRMED",
+      "source_classification": "PROPOSED_CLIENT_OWNED_FICTIONAL_ASSET",
+      "intended_use": "Certification production only",
+      "required_evidence": "Authenticated confirmation identifying the exact prop as a client-owned fictional Aurelian asset"
+    }
+  ]
+}

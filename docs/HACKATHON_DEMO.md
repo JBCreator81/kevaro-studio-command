@@ -4,7 +4,7 @@ Use the authenticated live application and select **Aurelian Parallel E2E Certif
 
 ## 0:00–0:30 — Governed production truth
 
-Show the exact production identity, `APPROVED_WITH_CONDITIONS`, stage `CONDITIONS_BLOCK_EXECUTION`, readiness 15, and five active conditions. Point out Crew Identity and the Studio Head authority gate.
+Show the exact production identity, `APPROVED_WITH_CONDITIONS`, stage `CONDITIONS_BLOCK_EXECUTION`, readiness 15, and two active conditions. Point out Crew Identity and the Studio Head authority gate.
 
 ## 0:30–1:05 — Parallel evidence
 
@@ -16,7 +16,7 @@ Show the governed graph, parallel scheduling and asset/media branches, Node Inte
 
 ## 1:40–2:15 — Evidence Before Execution
 
-Show the five-condition panel. Each condition names the missing evidence provider and next action. Clearance is `BLOCKED`; independent QA is `FAIL`; execution is blocked. No brand guide, upload method, detailed budget, product permission, or licence has been invented.
+Show the two-condition panel. Each condition names the missing evidence provider and next action. Clearance is `BLOCKED`; independent QA is `FAIL`; execution is blocked. No brand guide, upload method, detailed budget, product permission, or licence has been invented.
 
 ## 2:15–2:40 — Human authority and refusal
 
@@ -37,4 +37,4 @@ For the production build, run `npm run build` in `frontend/`; the FastAPI servic
 
 ## Pre-recording authority gate
 
-`docs/aurelian/FIRST_PARTY_EVIDENCE_DRAFT.md` prepares the bounded brand, delivery, budget, prop, and sourcing declarations, but it is deliberately not treated as approval. Before recording a later zero-blocker path, an authenticated Studio Head must resolve the `Everyday Glow` / `Symphony of Serenity` conflict and adopt the applicable declarations. Until then, demonstrate the truthful five-condition refusal path documented above.
+The authenticated runtime records `Symphony of Serenity` as canonical and preserves `Everyday Glow` as conflicting history. Brand, delivery, and budget declarations are adopted. Before recording a later zero-blocker path, identify the exact fictional prop and create the remaining original/generated media with provenance. Until then, demonstrate the truthful two-condition refusal path documented above.

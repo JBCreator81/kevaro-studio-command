@@ -138,6 +138,82 @@ def rebuild_platform_amendment_artifacts(
     return rebuilt
 
 
+def rebuild_first_party_adoption_artifacts(
+    *, runtime_state: GovernedProductionRuntimeState, approved_artifacts: dict[str, Any],
+) -> dict[str, Any]:
+    """Consume the latest creative directive and adopted declarations."""
+    if not runtime_state.creative_directives or len(runtime_state.first_party_declarations) < 3:
+        raise ValueError("Selective rebuild requires governed creative and declaration evidence.")
+    directive = runtime_state.creative_directives[-1]
+    if directive.canonical_concept != "Symphony of Serenity" or directive.conflicting_concept != "Everyday Glow":
+        raise ValueError("Creative directive does not match the registered reconciliation.")
+    if runtime_state.memory_snapshot.stale_artifacts != directive.stale_artifacts:
+        raise ValueError("Runtime stale state does not match the creative directive closure.")
+    rebuilt = {key: deepcopy(approved_artifacts[key]) for key in directive.stale_artifacts}
+    creative = rebuilt["creative_treatment"]
+    concept = creative["recommended_concept"]
+    concept["concept_name"] = "Symphony of Serenity"
+    concept["core_idea"] = "A calm, refined cinematic progression through the fictional Aurelian Renewal Retreat, using atmosphere, hospitality, and quiet sensory detail without medical or outcome claims."
+    creative["unresolved_creative_questions"] = _drop_matching(creative.get("unresolved_creative_questions", []), "brand guidelines")
+
+    renames = {
+        "Request Specific Social Media Platforms from Client/SH": "Apply Confirmed Platform Delivery Targets",
+        "Obtain Detailed Brand Guidelines from Client/SH": "Apply Adopted Aurelian Brand Guidelines",
+        "Clarify Content Upload Methods with Client/SH": "Apply Adopted Delivery Workflow",
+    }
+    def rename(value: Any) -> Any:
+        if isinstance(value, dict): return {k: rename(v) for k, v in value.items()}
+        if isinstance(value, list): return [rename(v) for v in value]
+        if isinstance(value, str):
+            for old, new in renames.items(): value = value.replace(old, new)
+        return value
+    rebuilt["production_plan"] = rename(rebuilt["production_plan"])
+    rebuilt["production_schedule"] = rename(rebuilt["production_schedule"])
+    for phrase in ("brand guidelines", "content upload methods", "detailed budget"):
+        rebuilt["production_plan"]["blockers"] = _drop_matching(rebuilt["production_plan"].get("blockers", []), phrase)
+        rebuilt["production_schedule"]["deadline_threats"] = _drop_matching(rebuilt["production_schedule"].get("deadline_threats", []), phrase)
+    assets = rebuilt["asset_media_plan"]
+    assets["client_supplied_assets"] = _drop_matching(assets.get("client_supplied_assets", []), "brand guidelines")
+    assets["blocked_assets"] = _drop_matching(assets.get("blocked_assets", []), "brand guidelines")
+
+    clearance = rebuilt["clearance_report"]
+    for field in ("blocked_items", "unresolved_questions", "required_documents", "clearance_risks"):
+        values=clearance.get(field, [])
+        for phrase in ("brand guidelines", "content upload methods", "detailed budget"):
+            values=_drop_matching(values,phrase)
+        clearance[field]=values
+    clearance.setdefault("cleared_items", []).extend([
+        "Authenticated Aurelian brand declaration", "Adopted production delivery workflow",
+        "Adopted CAD 12,000 internal budget allocation",
+    ])
+    clearance["clearance_decision"]="BLOCKED"
+
+    qa=rebuilt["verification_report"]
+    resolved=set(item.resolved_condition for item in runtime_state.first_party_declarations[-3:])
+    qa["findings"]=[x for x in qa.get("findings",[]) if x.get("finding_name") not in resolved]
+    qa["failed_checks"]=[x for x in qa.get("failed_checks",[]) if not any(condition in x for condition in resolved)]
+    for phrase in ("brand guidelines", "content upload methods", "detailed budget"):
+        qa["unresolved_items"]=_drop_matching(qa.get("unresolved_items",[]),phrase)
+    qa["qa_decision"]="FAIL"
+
+    decision=rebuilt["decision_package"]
+    decision["material_blockers"]=list(runtime_state.workflow_state.active_conditions)
+    decision["conditions_for_approval"]=list(runtime_state.workflow_state.active_conditions)
+    decision["qa_decision"]="FAIL"; decision["clearance_status"]="BLOCKED"
+    for key, model in ARTIFACT_MODELS.items():
+        if key in rebuilt:
+            artifact=model.model_validate(rebuilt[key])
+            if hasattr(artifact,"production_name"): require_production_identity(runtime_state.production_name,artifact.production_name)
+    build_production_graph(production_plan=ProductionPlan.model_validate(rebuilt["production_plan"]),production_schedule=ProductionSchedule.model_validate(rebuilt["production_schedule"]))
+    return rebuilt
+
+
+def rebuild_stale_artifacts(*, runtime_state: GovernedProductionRuntimeState, approved_artifacts: dict[str, Any]) -> dict[str, Any]:
+    if runtime_state.creative_directives and runtime_state.memory_snapshot.stale_artifacts == runtime_state.creative_directives[-1].stale_artifacts:
+        return rebuild_first_party_adoption_artifacts(runtime_state=runtime_state, approved_artifacts=approved_artifacts)
+    return rebuild_platform_amendment_artifacts(runtime_state=runtime_state, approved_artifacts=approved_artifacts)
+
+
 def apply_selective_refresh(
     *, runtime_state: GovernedProductionRuntimeState,
     rebuilt_artifacts: dict[str, Any],

@@ -1,6 +1,13 @@
-# Aurelian first-party evidence pack — DRAFT
+# Aurelian first-party evidence and adoption record
 
-**Governance status:** DRAFT FOR AUTHENTICATED STUDIO HEAD REVIEW. This file is not an approval, permission, licence, contract, invoice, proof of spend, or third-party rights record. It must not clear a condition until an authenticated Studio Head adopts the relevant declaration through Kevaro's governed evidence transition.
+**Governance status:** PARTIALLY ADOPTED. The authenticated governed runtime now records `Symphony of Serenity` plus the brand, delivery, and budget declarations. The prop authorization remains a proposal because the exact prop identity is not persisted. This file is not a third-party licence, contract, invoice, or proof of spend.
+
+## Studio Head concept directive received
+
+- Canonical creative concept: **Symphony of Serenity**.
+- Conflicting artifact: **Everyday Glow** is stale and must not overwrite or silently alter the canonical concept.
+- Provenance: Studio Head directive supplied in the current Kevaro review conversation.
+- Runtime persistence: complete through the authenticated transactional creative-directive transition; original decision history is preserved.
 
 Production: **Aurelian Parallel E2E Certification 20260903-B**
 Campaign: **Aurelian Renewal Retreat**
@@ -10,9 +17,9 @@ Budget ceiling: **CAD 12,000**
 
 | Current condition | Class | What is supportable now | What still authorizes clearance |
 |---|---|---|---|
-| Detailed Brand Guidelines | B/C | A bounded production guide can be derived from supplied first-party campaign facts. | Authenticated Studio Head adoption and explicit resolution of the persisted `Everyday Glow` versus supplied `Symphony of Serenity` concept conflict. |
-| Content Upload Methods | C | Production can deliver validated masters through a governed handoff; client account credentials are not required for production clearance. | Authenticated adoption of the delivery workflow and designation of the client-side upload operator. |
-| Detailed Budget Constraints | A/B/C | Persisted source evidence confirms the CAD 12,000 cap; the allocation below totals exactly that cap. | Authenticated Studio Head adoption. It is a plan, not proof of spend. |
+| Detailed Brand Guidelines | B/C | Adopted as governed first-party evidence. | Resolved. |
+| Content Upload Methods | C | Adopted governed delivery workflow; client credentials remain outside Kevaro. | Resolved. |
+| Detailed Budget Constraints | A/B/C | Adopted internal allocation totals exactly CAD 12,000. | Resolved; it remains a plan, not proof of spend. |
 | Product Usage Permission | B | The proposed scope is limited to fictional Aurelian-owned packaging/props and excludes real third-party goods. | Authenticated client/Studio Head confirmation that the exact prop is an Aurelian-owned fictional asset. |
 | Talent, Locations, Music, Fonts, SFX licensing | C/D | The plan below avoids third-party talent, locations, music and SFX; Noto Sans has official OFL evidence. | Asset-level creation provenance and verification; exact Noto file/version plus OFL copy. Any substituted third-party asset reopens its exact rights gate. |
 
@@ -21,7 +28,7 @@ Budget ceiling: **CAD 12,000**
 This guide intentionally contains no trademark, registration, ownership beyond supplied fictional-brand scope, or unsupported visual specification.
 
 - Positioning: fictional premium luxury-wellness retreat experience.
-- Campaign concept proposed by the current directive: **Symphony of Serenity**. This remains a decision conflict until the Studio Head explicitly supersedes the persisted `Everyday Glow` treatment.
+- Canonical campaign concept directed by the Studio Head: **Symphony of Serenity**. The persisted `Everyday Glow` treatment is conflicting and must remain stale until a governed rebuild replaces it.
 - Tone: calm, refined, cinematic, restrained; no hype.
 - Messaging: describe atmosphere, hospitality, guided relaxation, quiet private spaces, spa services, and observable experience only.
 - Prohibited messaging: medical claims, diagnosis/treatment/cure/prevention language, health outcomes, guaranteed results, and unsupported comparative or scientific claims.
@@ -76,10 +83,6 @@ This policy eliminates a need to acquire third-party assets; it does not clear a
 
 ## Exact authenticated Studio Head actions
 
-1. Resolve the creative conflict: retain `Everyday Glow` or explicitly approve `Symphony of Serenity` and route the treatment through governed change/rebuild.
-2. Adopt or revise the bounded brand guide.
-3. Adopt or revise the delivery workflow and name the client-side upload role (credentials are not requested).
-4. Adopt or revise the CAD 12,000 allocation.
-5. Confirm whether the exact prop is an Aurelian-owned fictional asset and, if so, adopt the limited authorization.
-6. Adopt the rights-avoiding sourcing policy.
-7. After assets exist, attach asset-level provenance and the exact Noto licence package; then rerun clearance and independent QA.
+1. Confirm whether the exact prop is an Aurelian-owned fictional asset and, if so, adopt the limited authorization.
+2. Create the remaining generated/original environment, score, and SFX assets with asset-level provenance.
+3. Reconcile the remaining exact conditions, then rerun clearance and independent QA.

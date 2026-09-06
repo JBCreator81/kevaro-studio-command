@@ -1188,6 +1188,24 @@ class GovernedEvidenceAmendment(BaseModel):
     recorded_at: datetime
 
 
+class GovernedCreativeDirective(BaseModel):
+    production_name: str
+    canonical_concept: str
+    conflicting_concept: str
+    stale_artifacts: List[str]
+    directed_by: AccountabilityActor
+    directed_at: datetime
+
+
+class GovernedFirstPartyDeclaration(BaseModel):
+    production_name: str
+    declaration_type: str
+    resolved_condition: str
+    declaration: Dict[str, Any]
+    adopted_by: AccountabilityActor
+    adopted_at: datetime
+
+
 class GovernedArtifactRefresh(BaseModel):
     production_name: str
     source_amendment_index: int
@@ -1307,6 +1325,12 @@ class GovernedProductionRuntimeState(AccountableArtifact):
     artifact_refreshes: List[GovernedArtifactRefresh] = Field(
         default_factory=list,
         description="Append-only governed selective-rebuild history."
+    )
+    creative_directives: List[GovernedCreativeDirective] = Field(
+        default_factory=list, description="Append-only Studio Head creative directives."
+    )
+    first_party_declarations: List[GovernedFirstPartyDeclaration] = Field(
+        default_factory=list, description="Append-only adopted first-party production evidence."
     )
 
 

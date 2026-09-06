@@ -473,6 +473,8 @@ def build_studio_command_snapshot(
         "condition_guidance": condition_guidance,
         "evidence_amendments": [item.model_dump(mode="json") for item in runtime_state.evidence_amendments],
         "artifact_refreshes": [item.model_dump(mode="json") for item in runtime_state.artifact_refreshes],
+        "creative_directives": [item.model_dump(mode="json") for item in runtime_state.creative_directives],
+        "first_party_declarations": [item.model_dump(mode="json") for item in runtime_state.first_party_declarations],
         "clearance_status": clearance_artifact.get("clearance_decision"),
         "qa_status": verification_artifact.get("qa_decision"),
         "readiness_score": verification_artifact.get("readiness_score"),
