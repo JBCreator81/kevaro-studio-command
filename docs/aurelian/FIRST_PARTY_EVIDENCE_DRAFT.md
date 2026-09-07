@@ -83,6 +83,6 @@ This policy eliminates a need to acquire third-party assets; it does not clear a
 
 ## Exact authenticated Studio Head actions
 
-1. Confirm whether the exact prop is an Aurelian-owned fictional asset and, if so, adopt the limited authorization.
-2. Create the remaining generated/original environment, score, and SFX assets with asset-level provenance.
+1. Identify the exact fictional prop, confirm it is an Aurelian-owned fictional asset, and adopt the limited authorization.
+2. Create the remaining original/generated score and SFX assets with asset-level provenance. Two fictional generated environments and their prompt/hash records were registered on 2026-09-07.
 3. Reconcile the remaining exact conditions, then rerun clearance and independent QA.

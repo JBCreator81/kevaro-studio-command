@@ -1,62 +1,128 @@
 {
+  "schema_version": "1.1",
   "production_name": "Aurelian Parallel E2E Certification 20260903-B",
   "canonical_concept": "Symphony of Serenity",
-  "manifest_status": "PARTIAL_EVIDENCE_PENDING_MEDIA_CREATION",
+  "manifest_status": "PARTIAL_EVIDENCE_PENDING_AUDIO_AND_PROP_DECISION",
+  "verified_at": "2026-09-07T13:07:14Z",
+  "verification_method": "Repository file existence, SHA-256 integrity, prompt/output review, and exact licence-package comparison",
   "external_asset_substitution_rule": "Any external substitute reopens its exact rights and clearance gate.",
   "assets": [
     {
       "asset_id": "aurelian-font-noto-sans-variable",
-      "category": "FONT",
-      "status": "AVAILABLE_WITH_LICENSE",
-      "source_classification": "OPEN_SOURCE_THIRD_PARTY",
+      "asset_type": "FONT",
+      "production": "Aurelian Parallel E2E Certification 20260903-B",
+      "description": "Noto Sans variable font package",
+      "source_origin": "Official Google Fonts repository at pinned commit",
+      "generation_tool_provenance": null,
+      "rights_classification": "OPEN_SOURCE_THIRD_PARTY_OFL_1_1",
       "file": "fonts/NotoSans-wdth-wght.ttf",
-      "intended_use": "Captions and restrained on-screen text",
+      "sha256": "bfb7bb691513f12e734dc346c03a03f784912432d7e3fa8e56efcf906fe86b3d",
+      "licence_evidence_reference": "fonts/OFL.txt",
+      "licence_sha256": "cee9892f9f0cc8fe882c9e9537ee6a89621d86ee7ceaf70b02e2b2b1c25c061a",
       "official_source": "https://github.com/google/fonts/tree/5e35378e6bda803962ee6fd257e444a7d459660d/ofl/notosans",
       "source_commit": "5e35378e6bda803962ee6fd257e444a7d459660d",
-      "sha256": "bfb7bb691513f12e734dc346c03a03f784912432d7e3fa8e56efcf906fe86b3d",
-      "license": "SIL Open Font License 1.1",
-      "license_file": "fonts/OFL.txt",
-      "license_sha256": "cee9892f9f0cc8fe882c9e9537ee6a89621d86ee7ceaf70b02e2b2b1c25c061a"
+      "verification_status": "VERIFIED_WITH_APPLICABLE_LICENCE_PACKAGE",
+      "downstream_usage": "Captions and restrained on-screen text"
     },
     {
       "asset_id": "aurelian-talent-treatment",
-      "category": "TALENT",
-      "status": "NOT_REQUIRED_UNDER_ADOPTED_POLICY",
-      "source_classification": "NO_IDENTIFIABLE_PERSON",
-      "intended_use": "Abstract details, objects, textures, and non-identifiable generated forms only",
-      "provenance_required_if_changed": true
+      "asset_type": "TALENT",
+      "production": "Aurelian Parallel E2E Certification 20260903-B",
+      "description": "Rights-avoiding treatment with no identifiable person",
+      "source_origin": "Authenticated first-party production sourcing policy",
+      "generation_tool_provenance": null,
+      "rights_classification": "NO_IDENTIFIABLE_PERSON_NO_TALENT_ASSET",
+      "licence_evidence_reference": "docs/aurelian/FIRST_PARTY_EVIDENCE_DRAFT.md",
+      "verification_status": "VERIFIED_NOT_REQUIRED_UNDER_ADOPTED_POLICY",
+      "downstream_usage": "Abstract details, environments, textures, and non-identifiable forms only"
     },
     {
-      "asset_id": "aurelian-environments",
-      "category": "LOCATION",
-      "status": "REQUIRES_GENERATION",
-      "source_classification": "ORIGINAL_OR_VERIFIED_AI",
-      "intended_use": "Wholly generated or internally constructed fictional retreat environments",
-      "provenance_required": true
+      "asset_id": "aurelian-environment-dawn-interior-v1",
+      "asset_type": "LOCATION_ENVIRONMENT",
+      "production": "Aurelian Parallel E2E Certification 20260903-B",
+      "description": "Entirely fictional luxury retreat meditation interior at dawn",
+      "source_origin": "Generated specifically for this production in the current authenticated workspace session",
+      "generation_tool_provenance": {
+        "tool": "OpenAI built-in image generation tool",
+        "model": "Provider-managed model; exact model identifier not exposed by tool",
+        "created_at": "2026-09-07T13:04:00Z",
+        "specification_file": "environments/GENERATION_PROVENANCE.md",
+        "output_version": "v1"
+      },
+      "rights_classification": "ORIGINAL_GENERATED_PRODUCTION_ASSET_NO_THIRD_PARTY_LOCATION",
+      "file": "environments/retreat-dawn-interior-v1.png",
+      "sha256": "5a4fc0cd38a83322b4c85fe4bc98bb5f7bdb535e286f57f7b16bb213d5f61a04",
+      "licence_evidence_reference": "environments/GENERATION_PROVENANCE.md",
+      "verification_status": "VERIFIED_PROMPT_AND_VISUAL_REVIEW",
+      "downstream_usage": "16:9 environment plate and center-safe vertical adaptations"
+    },
+    {
+      "asset_id": "aurelian-environment-blue-hour-pavilion-v1",
+      "asset_type": "LOCATION_ENVIRONMENT",
+      "production": "Aurelian Parallel E2E Certification 20260903-B",
+      "description": "Entirely fictional open-air wellness pavilion at blue hour",
+      "source_origin": "Generated specifically for this production in the current authenticated workspace session",
+      "generation_tool_provenance": {
+        "tool": "OpenAI built-in image generation tool",
+        "model": "Provider-managed model; exact model identifier not exposed by tool",
+        "created_at": "2026-09-07T13:05:00Z",
+        "specification_file": "environments/GENERATION_PROVENANCE.md",
+        "output_version": "v1"
+      },
+      "rights_classification": "ORIGINAL_GENERATED_PRODUCTION_ASSET_NO_THIRD_PARTY_LOCATION",
+      "file": "environments/retreat-blue-hour-pavilion-v1.png",
+      "sha256": "2283958b96a023e7397cf6548ce2e8827185f8abcbd514b6b5954332b03fd0cb",
+      "licence_evidence_reference": "environments/GENERATION_PROVENANCE.md",
+      "verification_status": "VERIFIED_PROMPT_AND_VISUAL_REVIEW",
+      "downstream_usage": "16:9 environment plate with central 9:16 crop-safe composition"
     },
     {
       "asset_id": "aurelian-original-score",
-      "category": "MUSIC",
-      "status": "REQUIRES_CREATION",
-      "source_classification": "ORIGINAL_OR_AUTHORIZED_GENERATED",
-      "intended_use": "Production-specific score without commercial recordings or samples",
-      "provenance_required": true
+      "asset_type": "MUSIC",
+      "production": "Aurelian Parallel E2E Certification 20260903-B",
+      "description": "Production-specific original or authorized-generated score",
+      "source_origin": "Not yet created",
+      "generation_tool_provenance": {
+        "tool": null,
+        "model": null,
+        "created_at": null,
+        "specification_file": "audio/CREATION_SPECIFICATIONS.md",
+        "output_version": null
+      },
+      "rights_classification": "PLANNED_FIRST_PARTY_OR_AUTHORIZED_GENERATED_NO_COMMERCIAL_MUSIC",
+      "licence_evidence_reference": null,
+      "verification_status": "BLOCKED_ASSET_NOT_CREATED",
+      "downstream_usage": "30-second campaign score and platform adaptations"
     },
     {
       "asset_id": "aurelian-original-sound-design",
-      "category": "SFX",
-      "status": "REQUIRES_CREATION",
-      "source_classification": "ORIGINAL_OR_AUTHORIZED_GENERATED",
-      "intended_use": "Production-specific ambient sound design without external libraries",
-      "provenance_required": true
+      "asset_type": "SFX",
+      "production": "Aurelian Parallel E2E Certification 20260903-B",
+      "description": "Production-specific original or authorized-generated ambient sound design",
+      "source_origin": "Not yet created",
+      "generation_tool_provenance": {
+        "tool": null,
+        "model": null,
+        "created_at": null,
+        "specification_file": "audio/CREATION_SPECIFICATIONS.md",
+        "output_version": null
+      },
+      "rights_classification": "PLANNED_FIRST_PARTY_OR_AUTHORIZED_GENERATED_NO_EXTERNAL_LIBRARY",
+      "licence_evidence_reference": null,
+      "verification_status": "BLOCKED_ASSET_NOT_CREATED",
+      "downstream_usage": "Production-specific ambience, water, fabric, and transition accents"
     },
     {
       "asset_id": "aurelian-fictional-prop",
-      "category": "PROP",
-      "status": "BLOCKED_EXACT_IDENTITY_UNCONFIRMED",
-      "source_classification": "PROPOSED_CLIENT_OWNED_FICTIONAL_ASSET",
-      "intended_use": "Certification production only",
-      "required_evidence": "Authenticated confirmation identifying the exact prop as a client-owned fictional Aurelian asset"
+      "asset_type": "PROP",
+      "production": "Aurelian Parallel E2E Certification 20260903-B",
+      "description": "Generic premium brand product; exact fictional product not established",
+      "source_origin": "Persisted production artifacts use only the generic phrase Premium Brand Product (as Prop)",
+      "generation_tool_provenance": null,
+      "rights_classification": "PROPOSED_CLIENT_OWNED_FICTIONAL_ASSET_UNCONFIRMED",
+      "licence_evidence_reference": null,
+      "verification_status": "BLOCKED_EXACT_IDENTITY_AND_OWNERSHIP_CONFIRMATION_REQUIRED",
+      "downstream_usage": "Certification production only after authenticated Studio Head confirmation"
     }
   ]
 }

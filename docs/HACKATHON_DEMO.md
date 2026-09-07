@@ -37,4 +37,4 @@ For the production build, run `npm run build` in `frontend/`; the FastAPI servic
 
 ## Pre-recording authority gate
 
-The authenticated runtime records `Symphony of Serenity` as canonical and preserves `Everyday Glow` as conflicting history. Brand, delivery, and budget declarations are adopted. Before recording a later zero-blocker path, identify the exact fictional prop and create the remaining original/generated media with provenance. Until then, demonstrate the truthful two-condition refusal path documented above.
+The authenticated runtime records `Symphony of Serenity` as canonical and preserves `Everyday Glow` as conflicting history. Brand, delivery, and budget declarations are adopted. Before recording a later zero-blocker path, identify the exact fictional prop and create the remaining original/generated score and SFX with provenance. Two fictional generated environment plates and their prompt/hash provenance are already registered. Until then, demonstrate the truthful two-condition refusal path documented above.
