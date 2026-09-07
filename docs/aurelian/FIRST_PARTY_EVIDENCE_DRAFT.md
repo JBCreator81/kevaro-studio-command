@@ -1,6 +1,6 @@
 # Aurelian first-party evidence and adoption record
 
-**Governance status:** PARTIALLY ADOPTED. The authenticated governed runtime now records `Symphony of Serenity` plus the brand, delivery, and budget declarations. The prop authorization remains a proposal because the exact prop identity is not persisted. This file is not a third-party licence, contract, invoice, or proof of spend.
+**Governance status:** EVIDENCE ADOPTION COMPLETE; FINAL DELIVERABLE QA PENDING. The authenticated governed runtime now records `Symphony of Serenity` plus the brand, delivery, and budget declarations. The authenticated Studio Head authorization identifies Aurelian Renewal Serum as the fictional client-owned prop for this production only. This file is not a third-party licence, contract, invoice, or proof of spend.
 
 ## Studio Head concept directive received
 
@@ -20,8 +20,8 @@ Budget ceiling: **CAD 12,000**
 | Detailed Brand Guidelines | B/C | Adopted as governed first-party evidence. | Resolved. |
 | Content Upload Methods | C | Adopted governed delivery workflow; client credentials remain outside Kevaro. | Resolved. |
 | Detailed Budget Constraints | A/B/C | Adopted internal allocation totals exactly CAD 12,000. | Resolved; it remains a plan, not proof of spend. |
-| Product Usage Permission | B | The proposed scope is limited to fictional Aurelian-owned packaging/props and excludes real third-party goods. | Authenticated client/Studio Head confirmation that the exact prop is an Aurelian-owned fictional asset. |
-| Talent, Locations, Music, Fonts, SFX licensing | C/D | The plan below avoids third-party talent, locations, music and SFX; Noto Sans has official OFL evidence. | Asset-level creation provenance and verification; exact Noto file/version plus OFL copy. Any substituted third-party asset reopens its exact rights gate. |
+| Product Usage Permission | B | Aurelian Renewal Serum is the authenticated Studio Head-approved fictional client-owned prop, limited to this production. | Resolved through the governed prop declaration. |
+| Talent, Locations, Music, Fonts, SFX licensing | C/D | No identifiable talent; generated fictional environments; production-specific procedural score/SFX; pinned Noto Sans with bundled OFL-1.1. | Resolved through verified governed asset records. Any external substitution reopens its exact rights gate. |
 
 ## Proposed bounded brand guide
 
@@ -67,9 +67,9 @@ This is a planned allocation, not invoices, commitments, purchase orders, or pro
 
 No category may exceed the total cap without a new governed Studio Head decision. Third-party commitments require their own documented terms and rights evidence.
 
-## Proposed fictional prop authorization
+## Adopted fictional prop authorization
 
-If—and only if—the authenticated Studio Head confirms that the exact prop is an Aurelian-owned fictional brand asset, its use is authorized solely within **Aurelian Parallel E2E Certification 20260903-B**, its listed deliverables, and associated demo/audit materials. This proposed authorization does not cover real products, third-party marks, endorsements, resale, or unrelated productions.
+The authenticated Studio Head identifies **Aurelian Renewal Serum** as a fictional, client-owned Aurelian brand asset and authorizes its use solely within **Aurelian Parallel E2E Certification 20260903-B**, its listed deliverables, and associated demo/audit materials. This authorization does not cover real products, third-party manufacturers or marks, endorsements, resale, or unrelated productions.
 
 ## Rights-avoiding production sourcing policy
 
@@ -79,10 +79,10 @@ If—and only if—the authenticated Studio Head confirms that the exact prop is
 - **Fonts:** proposed family is Noto Sans. Google states Google Fonts are open-source and usable commercially; the official Noto repository identifies OFL-1.1. Preserve the exact font file/version and OFL text in the asset manifest. Sources: https://developers.google.com/fonts and https://github.com/notofonts/noto-fonts.
 - **SFX:** record or generate original ambient sound specifically for the production and retain source/generation provenance. Do not use an external library without its licence record.
 
-This policy eliminates a need to acquire third-party assets; it does not clear assets that have not yet been created and verified.
+This policy and the registered asset-level evidence resolved the combined rights condition. It does not clear any future external substitution.
 
 ## Exact authenticated Studio Head actions
 
-1. Identify the exact fictional prop, confirm it is an Aurelian-owned fictional asset, and adopt the limited authorization.
-2. Create the remaining original/generated score and SFX assets with asset-level provenance. Two fictional generated environments and their prompt/hash records were registered on 2026-09-07.
-3. Reconcile the remaining exact conditions, then rerun clearance and independent QA.
+1. Produce and register the final edited 30-second platform deliverables.
+2. Complete claims, captions, safe-zone, playback, audio-mix, export, checksum, and formal clearance verification.
+3. Run independent final-content QA, recalculate readiness, and finalize only if every delivery gate passes.

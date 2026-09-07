@@ -917,6 +917,30 @@ def adopt_first_party_evidence(production_name: str, request: Request) -> dict[s
     }
 
 
+@app.post("/api/productions/{production_name}/final-evidence-adoption")
+def adopt_final_aurelian_evidence(production_name: str, request: Request) -> dict[str, Any]:
+    canonical_name = canonical_production_name(production_name)
+    identity = _crew_identity(request, canonical_name)
+    try:
+        require_access(actor=identity.actor, action="APPROVE", accountability=None)
+        runtime = production_persistence.close_final_aurelian_evidence(
+            production_name=canonical_name, adopted_by=identity.actor,
+        )
+    except AuthorizationDenied as exc:
+        raise HTTPException(status_code=403, detail=exc.as_detail()) from exc
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {
+        "production_name": runtime.production_name,
+        "prop_identity": runtime.first_party_declarations[-1].declaration["prop_identity"],
+        "resolved_conditions": [item.resolved_condition for item in runtime.evidence_amendments[-2:]],
+        "active_conditions": runtime.workflow_state.active_conditions,
+        "stale_artifacts": runtime.memory_snapshot.stale_artifacts,
+        "current_stage": runtime.current_stage,
+        "execution_authorized": runtime.execution_authorized,
+    }
+
+
 @app.post("/api/productions/{production_name}/evidence-amendments")
 def amend_production_evidence(
     production_name: str,

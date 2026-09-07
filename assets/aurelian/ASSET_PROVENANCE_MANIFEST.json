@@ -1,9 +1,9 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "production_name": "Aurelian Parallel E2E Certification 20260903-B",
   "canonical_concept": "Symphony of Serenity",
-  "manifest_status": "PARTIAL_EVIDENCE_PENDING_AUDIO_AND_PROP_DECISION",
-  "verified_at": "2026-09-07T13:07:14Z",
+  "manifest_status": "GOVERNED_EVIDENCE_ADOPTION_COMPLETE_FINAL_DELIVERABLES_PENDING",
+  "verified_at": "2026-09-07T13:49:08Z",
   "verification_method": "Repository file existence, SHA-256 integrity, prompt/output review, and exact licence-package comparison",
   "external_asset_substitution_rule": "Any external substitute reopens its exact rights and clearance gate.",
   "assets": [
@@ -81,48 +81,54 @@
       "asset_type": "MUSIC",
       "production": "Aurelian Parallel E2E Certification 20260903-B",
       "description": "Production-specific original or authorized-generated score",
-      "source_origin": "Not yet created",
+      "source_origin": "Deterministic mathematical synthesis generated specifically for this production from repository source; no recordings or samples",
       "generation_tool_provenance": {
-        "tool": null,
+        "tool": "Python 3 standard library wave/math synthesis",
         "model": null,
-        "created_at": null,
+        "created_at": "2026-09-07T13:32:00Z",
         "specification_file": "audio/CREATION_SPECIFICATIONS.md",
-        "output_version": null
+        "reproducible_source": "audio/generate_original_audio.py",
+        "output_version": "v1"
       },
-      "rights_classification": "PLANNED_FIRST_PARTY_OR_AUTHORIZED_GENERATED_NO_COMMERCIAL_MUSIC",
-      "licence_evidence_reference": null,
-      "verification_status": "BLOCKED_ASSET_NOT_CREATED",
-      "downstream_usage": "30-second campaign score and platform adaptations"
+      "rights_classification": "ORIGINAL_PRODUCTION_SPECIFIC_PROCEDURAL_AUDIO_NO_THIRD_PARTY_SAMPLES",
+      "licence_evidence_reference": "audio/CREATION_SPECIFICATIONS.md",
+      "verification_status": "VERIFIED_FILE_PROVENANCE_AND_TECHNICAL_PROPERTIES",
+      "downstream_usage": "30-second campaign score and platform adaptations",
+      "file": "audio/symphony-of-serenity-score-v1.wav",
+      "sha256": "5325ece2e9a8fd33194fa14abb5434b6a360e9284757a48f078b956cfb968820"
     },
     {
       "asset_id": "aurelian-original-sound-design",
       "asset_type": "SFX",
       "production": "Aurelian Parallel E2E Certification 20260903-B",
       "description": "Production-specific original or authorized-generated ambient sound design",
-      "source_origin": "Not yet created",
+      "source_origin": "Deterministic mathematical synthesis generated specifically for this production from repository source; no recordings or external libraries",
       "generation_tool_provenance": {
-        "tool": null,
+        "tool": "Python 3 standard library wave/math synthesis",
         "model": null,
-        "created_at": null,
+        "created_at": "2026-09-07T13:32:00Z",
         "specification_file": "audio/CREATION_SPECIFICATIONS.md",
-        "output_version": null
+        "reproducible_source": "audio/generate_original_audio.py",
+        "output_version": "v1"
       },
-      "rights_classification": "PLANNED_FIRST_PARTY_OR_AUTHORIZED_GENERATED_NO_EXTERNAL_LIBRARY",
-      "licence_evidence_reference": null,
-      "verification_status": "BLOCKED_ASSET_NOT_CREATED",
-      "downstream_usage": "Production-specific ambience, water, fabric, and transition accents"
+      "rights_classification": "ORIGINAL_PRODUCTION_SPECIFIC_PROCEDURAL_AUDIO_NO_EXTERNAL_LIBRARY",
+      "licence_evidence_reference": "audio/CREATION_SPECIFICATIONS.md",
+      "verification_status": "VERIFIED_FILE_PROVENANCE_AND_TECHNICAL_PROPERTIES",
+      "downstream_usage": "Production-specific ambience, water, fabric, and transition accents",
+      "file": "audio/symphony-of-serenity-sfx-v1.wav",
+      "sha256": "5218b49cb8aba8e28017278310c30731f807a302f8f100cbdc47ace4c0fe4433"
     },
     {
       "asset_id": "aurelian-fictional-prop",
       "asset_type": "PROP",
       "production": "Aurelian Parallel E2E Certification 20260903-B",
-      "description": "Generic premium brand product; exact fictional product not established",
-      "source_origin": "Persisted production artifacts use only the generic phrase Premium Brand Product (as Prop)",
+      "description": "Aurelian Renewal Serum",
+      "source_origin": "Authenticated Studio Head decision supplied 2026-09-07",
       "generation_tool_provenance": null,
-      "rights_classification": "PROPOSED_CLIENT_OWNED_FICTIONAL_ASSET_UNCONFIRMED",
-      "licence_evidence_reference": null,
-      "verification_status": "BLOCKED_EXACT_IDENTITY_AND_OWNERSHIP_CONFIRMATION_REQUIRED",
-      "downstream_usage": "Certification production only after authenticated Studio Head confirmation"
+      "rights_classification": "FICTIONAL_CLIENT_OWNED_AURELIAN_BRAND_ASSET_LIMITED_PRODUCTION_USE",
+      "licence_evidence_reference": "Governed PROP_USAGE_AUTHORIZATION declaration",
+      "verification_status": "GOVERNED_STUDIO_HEAD_AUTHORIZATION_RECORDED",
+      "downstream_usage": "Aurelian Parallel E2E Certification 20260903-B only; no real third-party association"
     }
   ]
 }

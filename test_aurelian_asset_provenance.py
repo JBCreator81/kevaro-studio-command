@@ -32,15 +32,15 @@ def test_all_available_files_match_recorded_hashes():
     assert b"SIL OPEN FONT LICENSE Version 1.1" in licence
 
 
-def test_missing_evidence_remains_fail_closed():
+def test_final_evidence_files_and_governed_prop_adoption_are_verified():
     data = manifest()
-    blocked = {item["asset_type"]: item["verification_status"] for item in data["assets"] if item["verification_status"].startswith("BLOCKED")}
-    assert blocked == {
-        "MUSIC": "BLOCKED_ASSET_NOT_CREATED",
-        "SFX": "BLOCKED_ASSET_NOT_CREATED",
-        "PROP": "BLOCKED_EXACT_IDENTITY_AND_OWNERSHIP_CONFIRMATION_REQUIRED",
-    }
-    assert data["manifest_status"] == "PARTIAL_EVIDENCE_PENDING_AUDIO_AND_PROP_DECISION"
+    assert not [item for item in data["assets"] if item["verification_status"].startswith("BLOCKED")]
+    by_type = {item["asset_type"]: item for item in data["assets"]}
+    assert by_type["PROP"]["description"] == "Aurelian Renewal Serum"
+    assert by_type["PROP"]["verification_status"] == "GOVERNED_STUDIO_HEAD_AUTHORIZATION_RECORDED"
+    assert by_type["MUSIC"]["verification_status"] == "VERIFIED_FILE_PROVENANCE_AND_TECHNICAL_PROPERTIES"
+    assert by_type["SFX"]["verification_status"] == "VERIFIED_FILE_PROVENANCE_AND_TECHNICAL_PROPERTIES"
+    assert data["manifest_status"] == "GOVERNED_EVIDENCE_ADOPTION_COMPLETE_FINAL_DELIVERABLES_PENDING"
 
 
 def test_generated_environments_record_prompt_and_non_third_party_scope():

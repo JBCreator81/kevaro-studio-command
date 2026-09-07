@@ -1,23 +1,26 @@
-# Aurelian original-audio creation specifications
+# Aurelian original-audio creation and provenance record
 
-These are production specifications, not evidence that audio has been created and not a licence. No audio generator or original recording source was available in the governed workspace session on 2026-09-07, so both assets remain blocked pending actual creation and verification.
+Production: **Aurelian Parallel E2E Certification 20260903-B**
+Canonical concept: **Symphony of Serenity**
+Created: **2026-09-07T13:32:00Z**
+Tool/source: **Python 3 standard-library deterministic wave/math synthesis**
+Generator source: `generate_original_audio.py`
+Rights classification: production-specific original procedural synthesis; no recordings, samples, performers, external sound libraries, or commercial tracks. This record makes no copyright-registration or exclusivity claim.
 
-Production: **Aurelian Parallel E2E Certification 20260903-B**  
-Canonical concept: **Symphony of Serenity**  
-Duration: **30 seconds**, with platform-safe adaptations  
-Source master: **24 fps picture reference**
+## Score v1
 
-## Score
+- File: `symphony-of-serenity-score-v1.wav`
+- SHA-256: `5325ece2e9a8fd33194fa14abb5434b6a360e9284757a48f078b956cfb968820`
+- Specification: sparse evolving harmonic bed with restrained synthesized bell accents, a calm arc, and a clean 30-second ending.
+- Technical verification: 30.000 seconds, 48 kHz, stereo, 16-bit PCM; RMS 3216 and peak 9265 on signed 16-bit samples.
+- Source verification: generator uses only mathematical oscillators and envelopes; no sampled or quoted melody.
 
-- Create a production-specific sparse instrumental score with a slow, calm arc, restrained dynamics, and a clean ending at 30 seconds.
-- Use only original composition/recording or an authorized generator whose output terms are retained with the asset.
-- Do not use commercial recordings, recognizable melodies, third-party samples, or unverified model inputs.
-- Required evidence: final audio file, SHA-256, creator/generator and version, creation timestamp, full prompt/composition notes, applicable terms, reviewer identity, and verification result.
+## Sound design / SFX v1
 
-## Sound design / SFX
-
-- Create production-specific water movement, soft fabric motion, subtle room air, and restrained transition accents.
-- Record original sources or use an authorized generator; do not use external sound libraries without attaching the exact applicable licence.
-- Required evidence: final stems/mix, SHA-256 values, recorder/generator and version, creation timestamps, source or prompt notes, applicable terms, reviewer identity, and verification result.
+- File: `symphony-of-serenity-sfx-v1.wav`
+- SHA-256: `5218b49cb8aba8e28017278310c30731f807a302f8f100cbdc47ace4c0fe4433`
+- Specification: restrained synthesized water/air texture and soft transition accents, generated from a fixed production-specific random seed.
+- Technical verification: 30.000 seconds, 48 kHz, stereo, 16-bit PCM; RMS 563 and peak 3800 on signed 16-bit samples.
+- Source verification: generator uses deterministic mathematical synthesis; no external library, recording, or sample.
 
 Substitution rule: introducing any external recording, sample, library, performer, or commercial work reopens the exact rights gate.

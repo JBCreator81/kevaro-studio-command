@@ -21,6 +21,7 @@ from .models import (
 from .decisions import apply_verified_evidence_amendment, evidence_amendment_stale_artifacts
 from .refresh import apply_selective_refresh, rebuild_stale_artifacts
 from .adoption import apply_first_party_adoption
+from .closure import apply_final_evidence_closure
 from fastapi.encoders import jsonable_encoder
 
 
@@ -387,6 +388,30 @@ class ProductionPersistence:
             return updated
 
         return adopt(transaction)
+
+    def close_final_aurelian_evidence(
+        self, *, production_name: str, adopted_by: AccountabilityActor,
+    ) -> GovernedProductionRuntimeState:
+        canonical_name = canonical_production_name(production_name)
+        document = self._production_document(canonical_name)
+        transaction = self.firestore_client.transaction()
+
+        @firestore.transactional
+        def close(transaction):
+            snapshot = document.get(transaction=transaction)
+            payload = snapshot.to_dict() if snapshot.exists else None
+            if not isinstance(payload, dict):
+                raise ValueError("Governed production runtime was not found.")
+            runtime = GovernedProductionRuntimeState.model_validate(_firestore_decode(payload))
+            registry_payload = _firestore_decode(payload.get("production_asset_registry"))
+            if not isinstance(registry_payload, dict):
+                raise ValueError("Governed production asset registry was not found.")
+            registry = ProductionAssetRegistry.model_validate(registry_payload)
+            updated = apply_final_evidence_closure(runtime_state=runtime, registry=registry, actor=adopted_by)
+            transaction.set(document, _runtime_payload(updated), merge=True)
+            return updated
+
+        return close(transaction)
 
     def refresh_stale_artifacts(
         self, *, production_name: str,
