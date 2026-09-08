@@ -1,0 +1,261 @@
+{
+  "schema_version": "1.1",
+  "production_name": "Aurelian Parallel E2E Certification 20260903-B",
+  "canonical_concept": "Symphony of Serenity",
+  "status": "READY_FOR_DELIVERY",
+  "created_at": "2026-09-07T14:30:00Z",
+  "evidence_boundary": "Observed file, hash, and probe values are recorded. Clearance and independent QA have not been performed and are not PASS.",
+  "deliverables": [
+    {
+      "asset_id": "aurelian-final-instagram-reels",
+      "asset_type": "FINAL_DELIVERABLE",
+      "production": "Aurelian Parallel E2E Certification 20260903-B",
+      "platform": "Instagram Reels",
+      "description": "Final 30-second Symphony of Serenity delivery for Instagram Reels",
+      "expected_filename": "aurelian-symphony-of-serenity-instagram-reels-v1.mp4",
+      "file_path_or_reference": "delivery/renders/aurelian-symphony-of-serenity-instagram-reels-v1.mp4",
+      "existence_status": "REGISTERED_IMMUTABLE_APPROVED",
+      "duration_seconds": 30.0,
+      "required_duration_seconds": 30.0,
+      "resolution": {
+        "width": 1080,
+        "height": 1920
+      },
+      "required_resolution": {
+        "width": 1080,
+        "height": 1920,
+        "four_k_where_practical": false
+      },
+      "aspect_ratio": "9:16",
+      "required_aspect_ratio": "9:16",
+      "container": "MP4",
+      "required_container": "MP4",
+      "video_codec": "H.264",
+      "required_video_codec": "H.264",
+      "frame_rate_fps": 24.0,
+      "required_frame_rate_fps": 24.0,
+      "audio": {
+        "present": true,
+        "codec": "AAC",
+        "sample_rate_hz": 48000,
+        "channels": 2,
+        "channel_layout": "stereo",
+        "duration_seconds": 30.058667,
+        "frame_count": 1409
+      },
+      "required_audio": {
+        "present": true,
+        "sample_rate_hz": 48000,
+        "source_assets": [
+          "symphony-of-serenity-score-v1.wav",
+          "symphony-of-serenity-sfx-v1.wav"
+        ]
+      },
+      "checksum_sha256": "f8db828dcf2b65356fa5700b3b877602d8adaea3e64a50009097c8c669bd55b0",
+      "production_identity": "Aurelian Parallel E2E Certification 20260903-B",
+      "provenance": {
+        "source_composition": "AurelianVertical",
+        "source_file": "delivery/renders/aurelian-symphony-of-serenity-vertical-source-v1.mp4",
+        "source_checksum_sha256": "f8db828dcf2b65356fa5700b3b877602d8adaea3e64a50009097c8c669bd55b0",
+        "derivation": "byte-identical platform copy",
+        "toolchain": "Remotion 4.0.506 / pinned Remotion FFmpeg"
+      },
+      "verification_status": "VERIFIED_CLEARANCE_AND_INDEPENDENT_QA_PASS",
+      "downstream_usage": "Governed final package after clearance, independent QA, and Studio Head approval",
+      "source_origin": "First-party assembly exclusively from registered Aurelian production assets",
+      "generation_tool_provenance": "assets/aurelian/remotion/PROVENANCE.md",
+      "rights_classification": "FIRST_PARTY_ASSEMBLY_PENDING_FINAL_CONTENT_CLEARANCE",
+      "licence_evidence_reference": "ASSET_PROVENANCE_MANIFEST.json and governed asset registry",
+      "container_duration_seconds": 30.058667,
+      "video_profile": "High",
+      "pixel_format_observed": "yuvj420p",
+      "video_frame_count": 720,
+      "file_size_bytes": 21592620,
+      "review_status": {
+        "clearance": "PASS",
+        "clearance_reviewer": "justburn19@gmail.com",
+        "independent_qa": "PASS",
+        "independent_qa_reviewer": "Live Certification Operator"
+      },
+      "governed_asset_id": "asset-0968828993534470a3d89f1e56bc4704",
+      "governed_version_id": "asset-0968828993534470a3d89f1e56bc4704:v1",
+      "clearance_state": "CLEAR_TO_PROCEED"
+    },
+    {
+      "asset_id": "aurelian-final-youtube-shorts",
+      "asset_type": "FINAL_DELIVERABLE",
+      "production": "Aurelian Parallel E2E Certification 20260903-B",
+      "platform": "YouTube Shorts",
+      "description": "Final 30-second Symphony of Serenity delivery for YouTube Shorts",
+      "expected_filename": "aurelian-symphony-of-serenity-youtube-shorts-v1.mp4",
+      "file_path_or_reference": "delivery/renders/aurelian-symphony-of-serenity-youtube-shorts-v1.mp4",
+      "existence_status": "REGISTERED_IMMUTABLE_APPROVED",
+      "duration_seconds": 30.0,
+      "required_duration_seconds": 30.0,
+      "resolution": {
+        "width": 1080,
+        "height": 1920
+      },
+      "required_resolution": {
+        "width": 1080,
+        "height": 1920,
+        "four_k_where_practical": false
+      },
+      "aspect_ratio": "9:16",
+      "required_aspect_ratio": "9:16",
+      "container": "MP4",
+      "required_container": "MP4",
+      "video_codec": "H.264",
+      "required_video_codec": "H.264",
+      "frame_rate_fps": 24.0,
+      "required_frame_rate_fps": 24.0,
+      "audio": {
+        "present": true,
+        "codec": "AAC",
+        "sample_rate_hz": 48000,
+        "channels": 2,
+        "channel_layout": "stereo",
+        "duration_seconds": 30.058667,
+        "frame_count": 1409
+      },
+      "required_audio": {
+        "present": true,
+        "sample_rate_hz": 48000,
+        "source_assets": [
+          "symphony-of-serenity-score-v1.wav",
+          "symphony-of-serenity-sfx-v1.wav"
+        ]
+      },
+      "checksum_sha256": "f8db828dcf2b65356fa5700b3b877602d8adaea3e64a50009097c8c669bd55b0",
+      "production_identity": "Aurelian Parallel E2E Certification 20260903-B",
+      "provenance": {
+        "source_composition": "AurelianVertical",
+        "source_file": "delivery/renders/aurelian-symphony-of-serenity-vertical-source-v1.mp4",
+        "source_checksum_sha256": "f8db828dcf2b65356fa5700b3b877602d8adaea3e64a50009097c8c669bd55b0",
+        "derivation": "byte-identical platform copy",
+        "toolchain": "Remotion 4.0.506 / pinned Remotion FFmpeg"
+      },
+      "verification_status": "VERIFIED_CLEARANCE_AND_INDEPENDENT_QA_PASS",
+      "downstream_usage": "Governed final package after clearance, independent QA, and Studio Head approval",
+      "source_origin": "First-party assembly exclusively from registered Aurelian production assets",
+      "generation_tool_provenance": "assets/aurelian/remotion/PROVENANCE.md",
+      "rights_classification": "FIRST_PARTY_ASSEMBLY_PENDING_FINAL_CONTENT_CLEARANCE",
+      "licence_evidence_reference": "ASSET_PROVENANCE_MANIFEST.json and governed asset registry",
+      "container_duration_seconds": 30.058667,
+      "video_profile": "High",
+      "pixel_format_observed": "yuvj420p",
+      "video_frame_count": 720,
+      "file_size_bytes": 21592620,
+      "review_status": {
+        "clearance": "PASS",
+        "clearance_reviewer": "justburn19@gmail.com",
+        "independent_qa": "PASS",
+        "independent_qa_reviewer": "Live Certification Operator"
+      },
+      "governed_asset_id": "asset-dd30477cbf854ef38470fece02aea026",
+      "governed_version_id": "asset-dd30477cbf854ef38470fece02aea026:v1",
+      "clearance_state": "CLEAR_TO_PROCEED"
+    },
+    {
+      "asset_id": "aurelian-final-16x9-master",
+      "asset_type": "FINAL_DELIVERABLE",
+      "production": "Aurelian Parallel E2E Certification 20260903-B",
+      "platform": "16:9 master/delivery",
+      "description": "Final 30-second Symphony of Serenity delivery for 16:9 master/delivery",
+      "expected_filename": "aurelian-symphony-of-serenity-16x9-master-v1.mp4",
+      "file_path_or_reference": "delivery/renders/aurelian-symphony-of-serenity-16x9-master-v1.mp4",
+      "existence_status": "REGISTERED_IMMUTABLE_APPROVED",
+      "duration_seconds": 30.0,
+      "required_duration_seconds": 30.0,
+      "resolution": {
+        "width": 3840,
+        "height": 2160
+      },
+      "required_resolution": {
+        "width": 3840,
+        "height": 2160,
+        "four_k_where_practical": true
+      },
+      "aspect_ratio": "16:9",
+      "required_aspect_ratio": "16:9",
+      "container": "MP4",
+      "required_container": "MP4",
+      "video_codec": "H.264",
+      "required_video_codec": "H.264",
+      "frame_rate_fps": 24.0,
+      "required_frame_rate_fps": 24.0,
+      "audio": {
+        "present": true,
+        "codec": "AAC",
+        "sample_rate_hz": 48000,
+        "channels": 2,
+        "channel_layout": "stereo",
+        "duration_seconds": 30.058667,
+        "frame_count": 1409
+      },
+      "required_audio": {
+        "present": true,
+        "sample_rate_hz": 48000,
+        "source_assets": [
+          "symphony-of-serenity-score-v1.wav",
+          "symphony-of-serenity-sfx-v1.wav"
+        ]
+      },
+      "checksum_sha256": "bdd92d7e259c4a65ab4a9e2fb53589bbd0f10b64b2661a8ea47c4d4bca5e7cf3",
+      "production_identity": "Aurelian Parallel E2E Certification 20260903-B",
+      "provenance": {
+        "source_composition": "AurelianMaster",
+        "source_file": "delivery/renders/aurelian-symphony-of-serenity-16x9-source-1080-v1.mp4",
+        "source_checksum_sha256": "691730f1b3d287474fba4e46921dae0a01097eadbc1a7b1e46bfc74f865657ab",
+        "derivation": "exact 2x Lanczos upscale from 1920x1080 to 3840x2160; not native 4K detail",
+        "toolchain": "Remotion 4.0.506 / pinned Remotion FFmpeg"
+      },
+      "verification_status": "VERIFIED_CLEARANCE_AND_INDEPENDENT_QA_PASS",
+      "downstream_usage": "Governed final package after clearance, independent QA, and Studio Head approval",
+      "source_origin": "First-party assembly exclusively from registered Aurelian production assets",
+      "generation_tool_provenance": "assets/aurelian/remotion/PROVENANCE.md",
+      "rights_classification": "FIRST_PARTY_ASSEMBLY_PENDING_FINAL_CONTENT_CLEARANCE",
+      "licence_evidence_reference": "ASSET_PROVENANCE_MANIFEST.json and governed asset registry",
+      "container_duration_seconds": 30.058667,
+      "video_profile": "High",
+      "pixel_format_observed": "yuvj420p",
+      "video_frame_count": 720,
+      "file_size_bytes": 55216694,
+      "review_status": {
+        "clearance": "PASS",
+        "clearance_reviewer": "justburn19@gmail.com",
+        "independent_qa": "PASS",
+        "independent_qa_reviewer": "Live Certification Operator"
+      },
+      "governed_asset_id": "asset-3304d6ad69214e779e56fa0d6780635b",
+      "governed_version_id": "asset-3304d6ad69214e779e56fa0d6780635b:v1",
+      "clearance_state": "CLEAR_TO_PROCEED"
+    }
+  ],
+  "registration_gate": {
+    "required_before_registration": [
+      "Actual media file exists",
+      "SHA-256 calculated from file bytes",
+      "Automated media probe record attached"
+    ],
+    "required_after_immutable_registration": [
+      "Clearance/Compliance disposition recorded by an authorized reviewer",
+      "Independent content and technical QA recorded by a reviewer separate from the creator",
+      "Readiness recalculated from current clearance and QA records",
+      "Studio Head final approval recorded only if every deliverable passes",
+      "Governed finalization succeeds only if all runtime gates are eligible"
+    ],
+    "governed_endpoint": "POST /api/productions/{canonical production name}/assets/register",
+    "asset_category": "VIDEO",
+    "initial_clearance_state": "PENDING_FINAL_CONTENT_REVIEW"
+  },
+  "observed_at": "2026-09-08T11:08:21Z",
+  "governed_at": "2026-09-08T11:40:00Z",
+  "finalization": {
+    "status": "READY_FOR_DELIVERY",
+    "readiness_score": 100,
+    "studio_head_approval": "APPROVED",
+    "decision_sequence": 2,
+    "public_runtime_verified": true
+  }
+}

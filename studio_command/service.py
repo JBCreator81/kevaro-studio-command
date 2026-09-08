@@ -52,6 +52,7 @@ from studio_command.decisions import approve_governed_production
 from studio_command.models import StudioHeadDecisionPackage
 from studio_command.identity import canonical_production_name
 from studio_command.runtime_config import SecretConfigurationError, load_runtime_config
+from studio_command.final_media import approve_final_media_chain
 
 SERVICE_NAME = os.getenv("K_SERVICE", "kevaro-studio-command")
 REVISION = os.getenv("K_REVISION", "local")
@@ -138,6 +139,11 @@ class AssetReviewRequest(BaseModel):
     notes: str | None = None
     annotations: list[dict[str, Any]] = Field(default_factory=list)
     comparison_version_id: str | None = None
+
+
+class FinalMediaApprovalRequest(BaseModel):
+    asset_ids: list[str]
+    decision_notes: str
 
 
 class StudioHeadDecisionRequest(BaseModel):
@@ -658,7 +664,7 @@ def create_production_asset_version(
 
 @app.post("/api/productions/{production_name}/assets/{asset_id}/submit-review")
 def submit_production_asset_review(
-    production_name: str, asset_id: str, version_id: str, request: Request,
+    production_name: str, asset_id: str, version_id: str, http_request: Request,
 ) -> dict[str, Any]:
     try:
         asset = submit_asset_for_review(
@@ -1007,6 +1013,23 @@ def refresh_stale_production_artifacts(
         "readiness": artifacts["verification_report"]["readiness_score"],
         "execution_authorized": runtime_state.execution_authorized,
     }
+
+
+@app.post("/api/productions/{production_name}/final-media-approval")
+def approve_final_media(
+    production_name: str, request: FinalMediaApprovalRequest, http_request: Request,
+) -> dict[str, Any]:
+    canonical_name = canonical_production_name(production_name)
+    identity = _crew_identity(http_request, canonical_name)
+    try:
+        require_access(actor=identity.actor, action="APPROVE", accountability=None)
+        return approve_final_media_chain(
+            persistence=production_persistence, production_name=canonical_name,
+            actor=identity.actor, asset_ids=request.asset_ids,
+            decision_notes=request.decision_notes,
+        )
+    except (ValueError, AuthorizationDenied) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @app.post("/api/productions/{production_name}/finalize")

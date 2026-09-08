@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "package_type": "INDEPENDENT_CONTENT_TECHNICAL_QA",
+  "production_name": "Aurelian Parallel E2E Certification 20260903-B",
+  "canonical_concept": "Symphony of Serenity",
+  "prepared_at": "2026-09-08T11:08:21Z",
+  "status": "COMPLETED",
+  "disposition": "PASS",
+  "reviewer_identity": "Live Certification Operator",
+  "reviewed_at": "2026-09-08T11:40:00Z",
+  "independence_requirement": "Reviewer must be separately assigned and must not be the editor, asset creator, or sole verifier.",
+  "scope": [
+    "end-to-end counted-frame decode",
+    "hash and probe agreement",
+    "duration, dimensions, aspect ratio, codec, frame rate, and audio",
+    "safe areas, legibility, spelling, continuity, synchronization, and clipping",
+    "concept, prop, prohibited-claim, sourcing, and caption checks"
+  ],
+  "deliverable_manifest": "FINAL_DELIVERABLE_MANIFEST.json",
+  "technical_report": "MEDIA_TECHNICAL_REPORT.json",
+  "clearance_package": "CLEARANCE_REVIEW_PACKAGE.json",
+  "review_protocol": "CONTENT_QA_CHECKLIST.md",
+  "required_record": [
+    "independent reviewer identity",
+    "confirmed cleared immutable asset identifiers/checksums",
+    "per-deliverable checklist findings",
+    "playback environment",
+    "timestamp",
+    "PASS or FAIL disposition"
+  ],
+  "guardrail": "Package preparation and automated technical verification are not independent QA. No PASS is asserted.",
+  "findings": [],
+  "playback_environment": "Pinned ffprobe counted-frame decode scan plus Remotion/Chromium representative-frame inspection",
+  "evidence": "All three immutable v1 hashes match; dimensions, duration, frame rate, audio, text, safe zones, spelling, continuity, and visual/audio defect checks passed. No spoken word; captions are not applicable."
+}

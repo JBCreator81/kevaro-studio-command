@@ -370,9 +370,61 @@ The project has already demonstrated:
 
 ## Current Certification Snapshot
 
-The current Aurelian certification production demonstrates the fail-closed path, not a manufactured green state. A Studio Head used persisted production-linked evidence to reconcile one exact platform condition. Kevaro preserved the original decision, appended amendment provenance, marked the dependent graph closure stale, selectively refreshed it in one transaction, and retained genuine unresolved conditions. A later authenticated transition adopted the canonical `Symphony of Serenity` concept plus brand, delivery, and CAD 12,000 budget declarations; the six original evidence conditions are now resolved through authenticated, append-only transitions. Generated environments, original procedural audio, the Aurelian Renewal Serum prop declaration, and Noto/OFL evidence are registered. Final edited video deliverables remain absent, so clearance remains `BLOCKED`, QA remains `FAIL`, readiness is 70, and finalization correctly refuses.
+The current Aurelian certification production demonstrates the complete governed path from fail-closed evidence collection through immutable media registration, separated review, human approval, and finalization. A Studio Head used persisted production-linked evidence to reconcile one exact platform condition. Kevaro preserved the original decision, appended amendment provenance, marked the dependent graph closure stale, selectively refreshed it in one transaction, and retained genuine unresolved conditions. A later authenticated transition adopted the canonical `Symphony of Serenity` concept plus brand, delivery, and CAD 12,000 budget declarations; the six original evidence conditions are now resolved through authenticated, append-only transitions. Generated environments, original procedural audio, the Aurelian Renewal Serum prop declaration, and Noto/OFL evidence are registered. The three final edited video deliverables are registered as immutable governed VIDEO assets with preserved hashes, probe metadata, and derivation provenance. Authorized Clearance is `CLEAR TO PROCEED`, distinct independent QA is `PASS`, readiness is 100, Studio Head decision sequence 2 is `APPROVED`, and the persisted final package is `READY_FOR_DELIVERY`.
 
-Current remaining work is delivery-bound: produce and register the final edited platform deliverables, then verify claims, captions, safe zones, technical exports, playback, and formal clearance. Two generated environments, original procedural score/SFX, reproducible source, the fictional Aurelian Renewal Serum authorization, and the exact Noto Sans/OFL package are registered as governed evidence. Public Google Cloud deployment and the Devpost media/submission are also operator tasks. See [the three-minute demo runbook](docs/HACKATHON_DEMO.md).
+The governed production chain is complete. Remaining work is operator-bound: record/upload the demo and finish the Devpost submission; optional platform upload validation requires the client Instagram/YouTube accounts. Two generated environments, original procedural score/SFX, reproducible source, the fictional Aurelian Renewal Serum authorization, and the exact Noto Sans/OFL package are registered as governed evidence. The Devpost media and submission remain operator tasks. See [the three-minute demo runbook](docs/HACKATHON_DEMO.md).
+
+
+## Public Runtime and Demo Certification
+
+The verified Google Cloud Run service is:
+
+```text
+https://kevaro-studio-command-1016343355645.northamerica-northeast1.run.app
+```
+
+The FastAPI API and built React frontend are served from one container in project `kevaro-studio-command`, region `northamerica-northeast1`. A valid demo must show `bootstrap_source: GOVERNED_RUNTIME` and the exact Aurelian production identity; `STATIC_FALLBACK` is never presented as live state. Production-specific reads and all mutations require a signed session mapped to a persisted Crew Identity assignment.
+
+The three-minute route is maintained in [`docs/HACKATHON_DEMO.md`](docs/HACKATHON_DEMO.md). It demonstrates Gemini/Google ADK orchestration, Parallel grounded evidence and citations, graph dependencies, evidence amendments, selective rebuild, Studio Head accountability, role-aware guidance, independent gates, and the persisted `READY_FOR_DELIVERY` final package.
+
+## Local Setup
+
+Python 3.12 and Node 22 match the production container:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+cd frontend
+npm ci
+npm run build
+cd ..
+python -m studio_command
+```
+
+Run backend tests with `pytest -q`; run frontend checks with `npm run lint` and `npm run build` inside `frontend/`.
+
+Local runtime credentials are optional only for features that do not call their providers. Use local environment variables for `PARALLEL_API_KEY`, `KEVARO_INTERNAL_AUTH_TOKEN`, `KEVARO_SESSION_SIGNING_SECRET`, and the configured Studio Head name. Never commit values. Cloud mode reads the Parallel, internal-auth, and session secrets through Secret Manager and receives the Google OAuth client ID through its Cloud Run secret reference. Missing cloud configuration fails startup closed. Exact IAM and environment requirements are documented in [`docs/deployment/GOOGLE_CLOUD_RUNTIME.md`](docs/deployment/GOOGLE_CLOUD_RUNTIME.md).
+
+## Hackathon Integration Proof and Current Limitation
+
+- **Google / Gemini:** specialist production agents run through Gemini-backed Google ADK orchestration and Google Cloud persistence/runtime boundaries.
+- **Parallel:** the governed Research node exposes persisted search IDs, source citations, provenance, evidence gaps, and evidence-to-decision linkage; the Aurelian runtime currently reports `Parallel · VERIFIED` with nine grounded sources.
+- **Governance:** authenticated Studio Head decisions, Crew Identity, scoped access, evidence amendments, selective graph rebuild, clearance, independent QA, and finalization gates are persisted and judge-visible.
+
+The repository contains the final 30-second Instagram Reels, YouTube Shorts, and 4K 16:9 MP4 exports, plus recorded SHA-256 and technical metadata. Their inventory, registration evidence, completed Clearance package, completed independent-QA package, and technical report are in [`assets/aurelian/delivery/`](assets/aurelian/delivery/). The authenticated public snapshot reports readiness 100 and `READY_FOR_DELIVERY`; anonymous production access and mutation remain fail-closed.
+
+## Final Runtime Certification — 2026-09-08
+
+Certified against the governed Cloud Run persistence and the local finish-line worktree. The live health endpoint reports revision `kevaro-studio-command-00009-9lg` with Google Cloud, Secret Manager, Parallel credentials, protected mutation authentication, and crew-session authentication configured. The public bootstrap endpoint returns the exact Aurelian identity with `bootstrap_source: GOVERNED_RUNTIME`; the authenticated production snapshot returns `FINAL_MEDIA_APPROVED`, readiness 100, and `READY_FOR_DELIVERY`. Anonymous finalization returns 401.
+
+The three immutable v1 VIDEO assets retain their local SHA-256 values and technical metadata. Clearance was recorded by the authorized Studio Head identity; independent QA was separately recorded by `Live Certification Operator`, distinct from the registering creator. Studio Head decision sequence 2 and final-package persistence are append-only governed records. No direct Firestore edit was used.
+
+Exact remaining human work:
+
+1. Record and upload the demonstration video.
+2. Complete the Devpost media and submission fields.
+3. Optionally validate uploads in the client Instagram and YouTube accounts when credentials are available.
 
 ## Technology
 
@@ -402,4 +454,3 @@ kevaro-studio-command/
 ├── README.md
 └── LICENSE
 ```
-

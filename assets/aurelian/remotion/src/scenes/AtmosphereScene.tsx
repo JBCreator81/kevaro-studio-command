@@ -1,0 +1,4 @@
+import {AbsoluteFill,Easing,interpolate,useCurrentFrame,useVideoConfig} from 'remotion';
+import type {FilmFormat} from '../AurelianFilm';
+import {Halo,Particles,SceneFade,safe} from './shared';
+export const AtmosphereScene=({format}:{format:FilmFormat})=>{const frame=useCurrentFrame();const {width}=useVideoConfig();return <SceneFade><AbsoluteFill style={{...safe(format),justifyContent:'center',alignItems:'center'}}><Halo format={format}/><Particles format={format} count={12}/><div style={{textAlign:'center',translate:'0 '+interpolate(frame,[0,70],[34,0],{extrapolateRight:'clamp',easing:Easing.bezier(.16,1,.3,1)})+'px'}}><div style={{fontSize:width*(format==='vertical'?.084:.029),fontWeight:280,letterSpacing:'.22em',textTransform:'uppercase'}}>Aurelian</div><div style={{fontSize:width*(format==='vertical'?.026:.009),marginTop:width*.012,letterSpacing:'.55em',textTransform:'uppercase',color:'#d7c08e'}}>Wellness</div></div></AbsoluteFill></SceneFade>};

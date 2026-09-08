@@ -157,3 +157,6 @@ __pycache__/
 .DS_Store
 .vscode/
 .idea/
+
+# Local Remotion browser runtime libraries
+assets/aurelian/remotion/.runtime-libs/

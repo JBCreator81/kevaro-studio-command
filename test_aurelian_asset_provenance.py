@@ -15,7 +15,7 @@ def test_manifest_has_exact_identity_and_every_asset_category():
     assert data["production_name"] == TARGET
     assert data["canonical_concept"] == "Symphony of Serenity"
     categories = {item["asset_type"] for item in data["assets"]}
-    assert categories == {"FONT", "TALENT", "LOCATION_ENVIRONMENT", "MUSIC", "SFX", "PROP"}
+    assert categories == {"FONT", "TALENT", "LOCATION_ENVIRONMENT", "MUSIC", "SFX", "PROP", "FINAL_DELIVERABLE"}
     assert all(item["production"] == TARGET for item in data["assets"])
     assert all({"asset_id", "description", "source_origin", "generation_tool_provenance", "rights_classification", "licence_evidence_reference", "verification_status", "downstream_usage"} <= item.keys() for item in data["assets"])
 
@@ -40,7 +40,7 @@ def test_final_evidence_files_and_governed_prop_adoption_are_verified():
     assert by_type["PROP"]["verification_status"] == "GOVERNED_STUDIO_HEAD_AUTHORIZATION_RECORDED"
     assert by_type["MUSIC"]["verification_status"] == "VERIFIED_FILE_PROVENANCE_AND_TECHNICAL_PROPERTIES"
     assert by_type["SFX"]["verification_status"] == "VERIFIED_FILE_PROVENANCE_AND_TECHNICAL_PROPERTIES"
-    assert data["manifest_status"] == "GOVERNED_EVIDENCE_ADOPTION_COMPLETE_FINAL_DELIVERABLES_PENDING"
+    assert data["manifest_status"] == "GOVERNED_FINAL_MEDIA_READY_FOR_DELIVERY"
 
 
 def test_generated_environments_record_prompt_and_non_third_party_scope():

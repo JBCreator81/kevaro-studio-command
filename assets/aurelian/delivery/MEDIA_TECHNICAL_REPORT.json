@@ -1,0 +1,136 @@
+{
+  "schema_version": "1.0",
+  "production_name": "Aurelian Parallel E2E Certification 20260903-B",
+  "canonical_concept": "Symphony of Serenity",
+  "observed_at": "2026-09-08T11:08:21Z",
+  "probe_tool": "Remotion 4.0.506 pinned ffprobe",
+  "integrity_method": "ffprobe metadata/index validation, counted-frame scan, SHA-256",
+  "integrity_note": "The 4K master completed an exhaustive show_frames scan with no errors. All outputs have complete indexes and expected counted frames. The pinned ffmpeg lacks null/raw muxers, so attempted null-output decode commands were tool-inconclusive and are not represented as media failures.",
+  "outputs": [
+    {
+      "role": "vertical source",
+      "file": "delivery/renders/aurelian-symphony-of-serenity-vertical-source-v1.mp4",
+      "size_bytes": 21592620,
+      "sha256": "f8db828dcf2b65356fa5700b3b877602d8adaea3e64a50009097c8c669bd55b0",
+      "video": {
+        "codec": "h264",
+        "profile": "High",
+        "width": 1080,
+        "height": 1920,
+        "pixel_format": "yuvj420p",
+        "fps": 24,
+        "duration_seconds": 30,
+        "frames": 720
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate_hz": 48000,
+        "channels": 2,
+        "layout": "stereo",
+        "duration_seconds": 30.058667,
+        "frames": 1409
+      },
+      "container_duration_seconds": 30.058667
+    },
+    {
+      "role": "16:9 source",
+      "file": "delivery/renders/aurelian-symphony-of-serenity-16x9-source-1080-v1.mp4",
+      "size_bytes": 23055635,
+      "sha256": "691730f1b3d287474fba4e46921dae0a01097eadbc1a7b1e46bfc74f865657ab",
+      "video": {
+        "codec": "h264",
+        "profile": "High",
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuvj420p",
+        "fps": 24,
+        "duration_seconds": 30,
+        "frames": 720
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate_hz": 48000,
+        "channels": 2,
+        "layout": "stereo",
+        "duration_seconds": 30.058667,
+        "frames": 1409
+      },
+      "container_duration_seconds": 30.058667
+    },
+    {
+      "role": "Instagram Reels deliverable",
+      "file": "delivery/renders/aurelian-symphony-of-serenity-instagram-reels-v1.mp4",
+      "size_bytes": 21592620,
+      "sha256": "f8db828dcf2b65356fa5700b3b877602d8adaea3e64a50009097c8c669bd55b0",
+      "video": {
+        "codec": "h264",
+        "profile": "High",
+        "width": 1080,
+        "height": 1920,
+        "pixel_format": "yuvj420p",
+        "fps": 24,
+        "duration_seconds": 30,
+        "frames": 720
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate_hz": 48000,
+        "channels": 2,
+        "layout": "stereo",
+        "duration_seconds": 30.058667,
+        "frames": 1409
+      },
+      "container_duration_seconds": 30.058667
+    },
+    {
+      "role": "YouTube Shorts deliverable",
+      "file": "delivery/renders/aurelian-symphony-of-serenity-youtube-shorts-v1.mp4",
+      "size_bytes": 21592620,
+      "sha256": "f8db828dcf2b65356fa5700b3b877602d8adaea3e64a50009097c8c669bd55b0",
+      "video": {
+        "codec": "h264",
+        "profile": "High",
+        "width": 1080,
+        "height": 1920,
+        "pixel_format": "yuvj420p",
+        "fps": 24,
+        "duration_seconds": 30,
+        "frames": 720
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate_hz": 48000,
+        "channels": 2,
+        "layout": "stereo",
+        "duration_seconds": 30.058667,
+        "frames": 1409
+      },
+      "container_duration_seconds": 30.058667
+    },
+    {
+      "role": "4K 16:9 deliverable",
+      "file": "delivery/renders/aurelian-symphony-of-serenity-16x9-master-v1.mp4",
+      "size_bytes": 55216694,
+      "sha256": "bdd92d7e259c4a65ab4a9e2fb53589bbd0f10b64b2661a8ea47c4d4bca5e7cf3",
+      "video": {
+        "codec": "h264",
+        "profile": "High",
+        "width": 3840,
+        "height": 2160,
+        "pixel_format": "yuvj420p",
+        "fps": 24,
+        "duration_seconds": 30,
+        "frames": 720
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate_hz": 48000,
+        "channels": 2,
+        "layout": "stereo",
+        "duration_seconds": 30.058667,
+        "frames": 1409
+      },
+      "container_duration_seconds": 30.058667
+    }
+  ]
+}

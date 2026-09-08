@@ -1,0 +1,24 @@
+{
+  "name": "aurelian-symphony-of-serenity",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts --no-open",
+    "render:vertical": "remotion render src/index.ts AurelianVertical ../delivery/renders/aurelian-symphony-of-serenity-vertical-source-v1.mp4 --codec=h264 --audio-codec=aac --crf=16 --pixel-format=yuv420p --audio-bitrate=320k --timeout=120000",
+    "render:master-source": "remotion render src/index.ts AurelianMaster ../delivery/renders/aurelian-symphony-of-serenity-16x9-source-1080-v1.mp4 --scale=0.5 --codec=h264 --audio-codec=aac --crf=16 --pixel-format=yuv420p --audio-bitrate=320k --timeout=120000",
+    "upscale:master": "node_modules/@remotion/compositor-linux-x64-gnu/ffmpeg -y -i ../delivery/renders/aurelian-symphony-of-serenity-16x9-source-1080-v1.mp4 -vf scale=3840:2160:flags=lanczos -c:v libx264 -preset veryfast -crf 16 -pix_fmt yuv420p -c:a copy -movflags +faststart ../delivery/renders/aurelian-symphony-of-serenity-16x9-master-v1.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.506",
+    "@remotion/fonts": "4.0.506",
+    "@remotion/media": "4.0.506",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.506"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.17",
+    "typescript": "5.9.3"
+  }
+}
