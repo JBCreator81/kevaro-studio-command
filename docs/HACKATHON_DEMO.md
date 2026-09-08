@@ -1,30 +1,30 @@
 # Three-minute governed demo
 
-Use the authenticated live application and select **Aurelian Parallel E2E Certification 20260903-B**. Do not use `frontend/public/studio-snapshot.json`; the header must show **LIVE PRODUCTION** and bootstrap must report `GOVERNED_RUNTIME`.
+Use the authenticated live application and select **Aurelian Parallel E2E Certification 20260903-B**. Do not use `frontend/public/studio-snapshot.json`; the header must show **LIVE PRODUCTION** and bootstrap must report `GOVERNED_RUNTIME`. Production-specific views require an assigned Crew Identity. Anonymous protected reads and actions are expected to be rejected.
 
 ## 0:00–0:30 — Governed production truth
 
-Show the exact production identity, `APPROVED_WITH_CONDITIONS`, stage `FINAL_ASSET_QA_REQUIRED`, readiness 70, and zero active evidence conditions. Point out Crew Identity and the Studio Head authority gate.
+Show the exact production identity, readiness 100, Studio Head decision `APPROVED`, and final status `READY_FOR_DELIVERY`. Point out Crew Identity and the Studio Head authority gate.
 
-## 0:30–1:05 — Parallel evidence
+## 0:30–1:05 — Gemini, Google ADK, and Parallel evidence
 
-Open Research / the Parallel Evidence Room. Show `Parallel · VERIFIED`, the research objective, nine persisted citations, search metadata, evidence gaps, and evidence-to-production impact. Explain that credentials are never returned to the browser.
+Show the Gemini-backed Google ADK production graph. Open Research / the Parallel Evidence Room and show `Parallel · VERIFIED`, the research objective, persisted citations, search metadata, evidence gaps, provenance, and evidence-to-production impact. Explain that credentials are never returned to the browser.
 
-## 1:05–1:40 — Graph and selective rebuild
+## 1:05–1:40 — Governed graph and Node Intelligence
 
-Show the governed graph, parallel scheduling and asset/media branches, Node Intelligence, and current/stale counts. In Production Memory, show the verified evidence amendment for Instagram Reels, YouTube Shorts, and 16:9 delivery, its authoritative Aurelian source artifact, and the appended artifact-refresh event. Emphasize that the original Studio Head decision was not rewritten.
+Show the governed agent graph, parallel scheduling and asset/media branches, and Node Intelligence. In Production Memory, show the verified evidence amendment, its authoritative Aurelian source artifact, and the appended artifact-refresh event. Emphasize that the original Studio Head decision was not rewritten.
 
 ## 1:40–2:15 — Evidence Before Execution
 
-Show the completed evidence amendments and ten governed assets. Clearance is `BLOCKED`; independent QA is `FAIL`; execution remains blocked because final edited deliverables are absent—not because evidence conditions were hidden or weakened.
+Show the three registered immutable final VIDEO assets for Instagram Reels, YouTube Shorts, and the 16:9 master. Show their hashes and provenance, Clearance `PASS`, distinct independent QA `PASS`, and readiness 100.
 
-## 2:15–2:40 — Human authority and refusal
+## 2:15–2:40 — Human authority and finalization
 
-Show the Studio Head identity and decision sequence. Attempt the governed finalize action through the authenticated API or prepared smoke command. Expected result: HTTP 409, because the runtime does not authorize final production execution. This refusal is the governance proof.
+Show Studio Head decision sequence 2 as `APPROVED`, finalization complete, the persisted final package, and `READY_FOR_DELIVERY`. Do not repeat finalization or rewrite any governed record.
 
-## 2:40–3:00 — Auditability and usability
+## 2:40–3:00 — Runtime and access boundary
 
-Return to amendment provenance, condition guidance, and Next Best Action. Close on the system's truthful chain: **Evidence → Decision → Execution**, with human authority and independent gates intact.
+Show the healthy deployed public runtime and `bootstrap_source: GOVERNED_RUNTIME`. Show that the authenticated assigned-crew view resolves the Aurelian production. Demonstrate only with a legitimate assigned session; anonymous protected operations remain rejected. Close on the governed chain: **Evidence → Decision → Execution**.
 
 ## Local run and checks
 
@@ -35,6 +35,6 @@ cd frontend && npm run dev
 
 For the production build, run `npm run build` in `frontend/`; the FastAPI service serves `frontend/dist`. Cloud configuration and credential boundaries are documented in `docs/deployment/GOOGLE_CLOUD_RUNTIME.md`.
 
-## Pre-recording authority gate
+## Pre-recording certification check
 
-The authenticated runtime records `Symphony of Serenity` as canonical and preserves `Everyday Glow` as conflicting history. Brand, delivery, and budget declarations are adopted. The six evidence conditions are resolved: Aurelian Renewal Serum is recorded as the fictional client-owned prop, and generated environments, original procedural score/SFX, reproducible source, and Noto/OFL evidence are registered. The truthful demo state still refuses finalization because final edited platform deliverables have not been registered for claims, captions, safe-zone, playback, technical, formal-clearance, and independent-QA checks.
+Confirm `/health` reports the certified deployed revision and `/api/studio-snapshot` reports the exact Aurelian identity with `GOVERNED_RUNTIME`. With a legitimate assigned crew session, confirm `FINAL_MEDIA_APPROVED`, readiness 100, `READY_FOR_DELIVERY`, all three delivery artifacts, Node Intelligence, provenance, and Parallel evidence. If an assigned session is unavailable, do not bypass authentication or present the static fallback as live proof.

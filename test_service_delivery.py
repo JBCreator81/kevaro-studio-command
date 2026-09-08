@@ -1,10 +1,15 @@
 from fastapi.testclient import TestClient
 
+from studio_command.auth import SESSION_COOKIE, issue_session
+
 import studio_command.service as service
 from studio_command.models import (
+    CrewMember,
+    CrewProductionAssignment,
     FinalProductionPackage,
     GovernedProductionRuntimeState,
 )
+from studio_command.runtime_config import RuntimeConfig
 
 
 class FakePersistence:
@@ -48,7 +53,33 @@ def test_delivery_route_rejects_missing_runtime(monkeypatch):
         def load_runtime_state(self, production_name):
             return None
 
+        def load_crew_member(self, auth_subject):
+            if auth_subject != "delivery-test-head":
+                return None
+            return CrewMember(
+                user_id="delivery-test-head",
+                auth_subject=auth_subject,
+                display_name="Delivery Test Head",
+                organization_id="test-studio",
+                assignments=[CrewProductionAssignment(
+                    production_name="Test Production",
+                    roles=["Studio Head"],
+                    studio_head=True,
+                )],
+            )
+
     monkeypatch.setattr(service, "production_persistence", MissingPersistence())
+    monkeypatch.setattr(
+        service.app.state,
+        "runtime_config",
+        RuntimeConfig(
+            "local",
+            "test",
+            "local-environment",
+            session_signing_secret="delivery-route-test-session-secret-32-bytes",
+        ),
+        raising=False,
+    )
 
     client = TestClient(service.app)
     response = client.post(
@@ -58,7 +89,26 @@ def test_delivery_route_rejects_missing_runtime(monkeypatch):
         },
     )
 
-    assert response.status_code in (401, 404, 422)
+    assert response.status_code == 401
+    assert response.json()["detail"]["reason_code"] == (
+        "AUTHENTICATED_SESSION_REQUIRED"
+    )
+
+    client.cookies.set(
+        SESSION_COOKIE,
+        issue_session(
+            "delivery-test-head",
+            "delivery-route-test-session-secret-32-bytes",
+        ),
+    )
+    authenticated = client.post(
+        "/api/productions/Test Production/deliver",
+        json={"production_name": "Test Production"},
+    )
+    assert authenticated.status_code == 404
+    assert authenticated.json()["detail"] == (
+        "Governed production runtime was not found."
+    )
 
 
 def test_delivery_route_is_registered_before_frontend_catchall():
