@@ -17,6 +17,26 @@ const compactValue = (value) => {
   return null;
 };
 
+const formatBytes = (value) => {
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes) || bytes < 0) return "Size not recorded";
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ["KB", "MB", "GB"];
+  let amount = bytes / 1024;
+  let unit = units[0];
+  for (let index = 1; amount >= 1024 && index < units.length; index += 1) {
+    amount /= 1024;
+    unit = units[index];
+  }
+  return `${amount >= 10 ? amount.toFixed(1) : amount.toFixed(2)} ${unit}`;
+};
+
+const provenanceLabel = (value) => {
+  if (!value || typeof value !== "object") return "Not declared";
+  return value.source || value.source_classification || value.origin ||
+    Object.entries(value).map(([key, item]) => `${formatLabel(key)}: ${compactValue(item)}`).filter((item) => !item.endsWith(": null")).join(" · ") || "Recorded in governed metadata";
+};
+
 const statusTone = (status = "") => {
   const value = String(status).toUpperCase();
   if (["COMPLETED", "APPROVED", "VERIFIED", "READY_FOR_DELIVERY"].includes(value)) return "good";
@@ -72,6 +92,9 @@ function App() {
   const [runtimeStatus, setRuntimeStatus] = useState(null);
   const [assetNotice, setAssetNotice] = useState("");
   const [assetBusy, setAssetBusy] = useState(false);
+  const [assetFile, setAssetFile] = useState(null);
+  const [assetNodeId, setAssetNodeId] = useState("Asset & Media");
+  const [assetProvenance, setAssetProvenance] = useState("Authenticated crew upload");
   const [finalizeNotice, setFinalizeNotice] = useState("");
   const [finalizeBusy, setFinalizeBusy] = useState(false);
   const [productionName, setProductionName] = useState("");
@@ -150,10 +173,10 @@ function App() {
     setAssetBusy(true); setAssetNotice("Registering governed asset…");
     try {
       const content = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(",")[1]); reader.onerror = reject; reader.readAsDataURL(file); });
-      const node = snapshot.graph.nodes.find((item) => item.node_id === "Asset & Media") || snapshot.graph.nodes[0];
-      const response = await fetch("/api/productions/" + encodeURIComponent(snapshot.production_name) + "/assets/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ node_id: node.node_id, asset_category: file.type.startsWith("video/") ? "VIDEO" : file.type.startsWith("audio/") ? "AUDIO" : file.type.startsWith("image/") ? "IMAGE" : "OTHER_PRODUCTION_FILE", filename: file.name, display_name: file.name, media_document_type: file.type || "application/octet-stream", content_base64: content, content_type: file.type || "application/octet-stream", provenance: { source: "authenticated browser upload" } }) });
+      const node = snapshot.graph.nodes.find((item) => item.node_id === assetNodeId) || snapshot.graph.nodes.find((item) => item.node_id === "Asset & Media") || snapshot.graph.nodes[0];
+      const response = await fetch("/api/productions/" + encodeURIComponent(snapshot.production_name) + "/assets/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ node_id: node.node_id, asset_category: file.type.startsWith("video/") ? "VIDEO" : file.type.startsWith("audio/") ? "AUDIO" : file.type.startsWith("image/") ? "IMAGE" : "OTHER_PRODUCTION_FILE", filename: file.name, display_name: file.name, media_document_type: file.type || "application/octet-stream", content_base64: content, content_type: file.type || "application/octet-stream", provenance: { source: assetProvenance.trim() || "Authenticated crew upload" } }) });
       if (!response.ok) throw new Error((await response.json()).detail?.reason || "Asset registration was not authorized.");
-      const refreshed = await fetch(snapshotEndpoint); setSnapshot(await refreshed.json()); setAssetNotice("Asset registered and production snapshot refreshed.");
+      const refreshed = await fetch(snapshotEndpoint); setSnapshot(await refreshed.json()); setAssetNotice("Asset registered for governed review. It is not automatically cleared or approved."); setAssetFile(null);
     } catch (uploadError) { setAssetNotice(uploadError.message); } finally { setAssetBusy(false); }
   };
 
@@ -844,9 +867,31 @@ function App() {
       </section>
 
       <section className="asset-ingress">
-        <div className="asset-heading"><div><p className="eyebrow">Production Asset Ingress</p><h2>Create in the right tool. Govern it here.</h2></div><div><strong>{assetWorkflow.approved_asset_count || 0}/{assetWorkflow.asset_count || 0}</strong><span>assets approved</span></div></div>
-        <div className="asset-list">{assetWorkflow.assets?.length ? assetWorkflow.assets.map((asset) => (<article key={asset.asset_id}><div><small>{formatLabel(asset.asset_category || "Production asset")}</small><strong>{asset.display_name || asset.filename || asset.asset_id}</strong><span>Version {asset.latest_version?.version_number || asset.version_number || 1} · {formatLabel(asset.review_state || asset.status)}</span></div><StatusPill tone={statusTone(asset.review_state || asset.status)}>{formatLabel(asset.handoff_state || asset.review_state || asset.status)}</StatusPill></article>)) : <p className="empty-proof">No governed assets are registered in this snapshot. Upload creates a new version; it never silently replaces prior work.</p>}</div>
-        <div className="asset-actions"><label className="ingress-button">{assetBusy ? "REGISTERING…" : "REGISTER ASSET"}<input type="file" hidden disabled={assetBusy || !currentCrew} onChange={(event) => registerBrowserAsset(event.target.files?.[0])} /></label><button type="button" disabled>EXTERNAL TOOL HANDOFF</button><span>{assetNotice || (currentCrew ? `Signed in as  · server-scoped authority` : "Sign in to register assets")}</span></div>
+        <div className="asset-heading"><div><p className="eyebrow">Production Asset Ingress</p><h2>Add Production Assets</h2><p>Upload production media or a supported file into the existing governed asset registry. Registration preserves identity and integrity; approval remains a separate human-controlled step.</p></div><div><strong>{assetWorkflow.approved_asset_count || 0}/{assetWorkflow.asset_count || 0}</strong><span>assets approved</span></div></div>
+        <div className="ingress-workflow" aria-label="Add production assets workflow">
+          <div className="ingress-step"><small>1 · SELECT FILE</small><label className="ingress-button">{assetFile ? "CHANGE FILE" : "SELECT PRODUCTION FILE"}<input type="file" hidden disabled={assetBusy || !currentCrew} onChange={(event) => setAssetFile(event.target.files?.[0] || null)} /></label><span>Media, documents, fonts, and supported production files</span></div>
+          <div className="ingress-step"><small>2 · PRODUCTION ASSOCIATION</small><label htmlFor="asset-route">Team / production area</label><select id="asset-route" value={assetNodeId} onChange={(event) => setAssetNodeId(event.target.value)} disabled={assetBusy}>{snapshot.graph.nodes.map((node) => <option key={node.node_id} value={node.node_id}>{node.task_name}</option>)}</select><span>{snapshot.production_name}</span></div>
+          <div className="ingress-step"><small>3 · SOURCE DECLARATION</small><label htmlFor="asset-provenance">Provenance / source</label><input id="asset-provenance" value={assetProvenance} onChange={(event) => setAssetProvenance(event.target.value)} disabled={assetBusy} placeholder="Who created or supplied this file?" /><span>Required for traceability and later clearance review</span></div>
+          <div className="ingress-step ingress-submit"><small>4 · REGISTER</small><button type="button" onClick={() => registerBrowserAsset(assetFile)} disabled={assetBusy || !currentCrew || !assetFile || !assetProvenance.trim()}>{assetBusy ? "REGISTERING…" : "ADD TO PRODUCTION"}</button><span>Next: submit for review → clearance → independent QA → Studio Head authority</span></div>
+        </div>
+        <div className="selected-asset-summary">
+          <div><small>SELECTED FILE</small><strong>{assetFile?.name || "No file selected"}</strong><span>{assetFile ? `${assetFile.type || "Unknown file type"} · ${formatBytes(assetFile.size)}` : "Choose a supported production file above"}</span></div>
+          <div><small>UPLOADER / CREW IDENTITY</small><strong>{currentCrew?.display_name || "Authenticated crew required"}</strong><span>{currentCrew?.studio_head ? "Studio Head" : currentCrew?.roles?.join(" · ") || "Role resolved server-side"}</span></div>
+          <div><small>INTEGRITY</small><strong>{assetFile ? "SHA-256 calculated server-side" : "Pending file selection"}</strong><span>Hash is recorded after successful governed registration</span></div>
+          <div><small>CURRENT STATUS</small><strong>Not submitted for approval</strong><span>Upload never grants clearance or approval</span></div>
+        </div>
+        {assetNotice && <p className="asset-notice" role="status">{assetNotice}</p>}
+        <div className="asset-list">{assetWorkflow.assets?.length ? assetWorkflow.assets.map((asset) => {
+          const version = asset.latest_version || asset;
+          const storage = version.storage || {};
+          const handoff = version.handoffs?.find((item) => item.status === "WAITING_FOR_RETURN");
+          return <article key={asset.asset_id}>
+            <div className="asset-card-main"><small>{formatLabel(asset.asset_category || "Production asset")}</small><strong>{asset.display_name || version.filename || asset.asset_id}</strong><span>{version.media_document_type || "File type not recorded"} · {formatBytes(storage.size_bytes)}</span><span>Production: {snapshot.production_name} · Area: {asset.node_id || version.node_id || "Not assigned"}</span></div>
+            <div className="asset-card-meta"><span><b>Uploader</b>{asset.owner?.name || version.accountability?.last_changed_by?.name || "Crew identity recorded server-side"}</span><span><b>Integrity</b>{storage.checksum_sha256 ? `SHA-256 ${storage.checksum_sha256}` : "SHA-256 not provided"}</span><span><b>Provenance</b>{provenanceLabel(version.provenance)}</span><span><b>Clearance</b>{formatLabel(version.clearance_state || "Not cleared")}</span><span><b>Approval</b>{formatLabel(asset.review_state || version.review_state || version.status || "Not submitted")}</span><span><b>External handoff</b>{handoff ? `${handoff.target_tool} · ${formatLabel(handoff.status)}` : version.external_source_tool ? formatLabel(version.external_source_tool) : "Available through the governed asset workflow"}</span></div>
+            <StatusPill tone={statusTone(asset.review_state || version.review_state || version.status)}>{formatLabel(asset.handoff_state !== "NONE" ? asset.handoff_state : asset.review_state || version.review_state || version.status)}</StatusPill>
+          </article>;
+        }) : <p className="empty-proof">No governed assets are registered in this snapshot. Upload creates a governed first version; it never silently replaces prior work or bypasses review.</p>}</div>
+        <div className="asset-next"><small>WHAT HAPPENS NEXT</small><strong>{assetWorkflow.next_required_asset_action ? formatLabel(assetWorkflow.next_required_asset_action.action_type) : "Registered assets continue through their governed review path"}</strong>{assetWorkflow.missing_deliverables?.length ? <span>Still required: {assetWorkflow.missing_deliverables.join(" · ")}</span> : <span>Role permissions, clearance, independent QA, and Studio Head authority remain enforced.</span>}</div>
       </section>
 
       {runtimeStatus && <section className="runtime-proof"><span>Runtime proof</span>{Object.entries(runtimeStatus).map(([key, value]) => <div key={key}><i className={value === "configured" || value === "enabled" ? "ok" : ""} />{formatLabel(key)} <strong>{formatLabel(value)}</strong></div>)}</section>}

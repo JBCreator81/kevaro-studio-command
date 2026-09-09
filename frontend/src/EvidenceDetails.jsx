@@ -52,7 +52,14 @@ export default function EvidenceDetails({
             <div>
               <strong>{citation.title || citation.source || "Recorded source"}</strong>
               <small>{citation.evidence_summary || citation.finding || citation.relevance || "No evidence summary recorded"}</small>
-              <small>{[citation.provider, citation.confidence, citation.publish_date].filter(Boolean).map(formatLabel).join(" · ")}</small>
+              {citation.url && <small className="citation-url">{citation.url}</small>}
+              <small>{[
+                citation.source && `Source: ${citation.source}`,
+                citation.provider && `Provider: ${citation.provider}`,
+                citation.publish_date && `Published: ${citation.publish_date}`,
+                citation.provenance && `Provenance: ${typeof citation.provenance === "string" ? citation.provenance : citation.provenance.source || citation.provenance.search_id || "Recorded"}`,
+                citation.confidence && `Confidence: ${formatLabel(citation.confidence)}`,
+              ].filter(Boolean).join(" · ")}</small>
             </div>
             {href && <b>↗</b>}
           </>;
